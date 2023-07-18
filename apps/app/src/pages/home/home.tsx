@@ -10,12 +10,12 @@ export default function Home(): React.ReactNode {
   const data = true;
   return (
     <div>
-      <div className="container h-[500px] rounded-md border my-10 py-5">
+      <div className="h-[500px] rounded-md border my-10 py-5">
         {data !== true ? (
           <DataTable columns={columns} data={payments} />
         ) : (
           <div className="flex flex-col gap-5 justify-center items-center h-full">
-            <img className="w-2/12 h-auto " src={emptySVG} alt="hero" />
+            <img className="w-60 h-auto" src={emptySVG} alt="hero" />
             <h3 className="text-md">Shucks! It is empty</h3>
             <Button>
               <Link className="flex items-center" to="/recording/new">
