@@ -1,5 +1,4 @@
 import { DEFAULT_MIME_TYPE } from '@/lib/audio';
-import { scriptURL as scriptUrl } from '@/pages/recording/utils';
 import { useRef, useState } from 'react';
 
 export function useAudio({
@@ -105,17 +104,20 @@ export function useAudio({
     return { ctx, source };
   }
 
-  async function createAudioProcessor(
+  async function createWorkletProcessor(
     ctx: AudioContext,
     name = 'audioProcessor',
-    scriptURL = scriptUrl,
-    destination: AudioNode | null = null,
+    scriptURL: string,
     subscriber: ((data: any) => void) | null = null,
-  ) {
+    destination: AudioNode | null = null,
+  ): Promise<AudioWorkletNode> {
     if (!ctx) {
       throw new Error(
         'No audio context. Please call createAudioContext() first',
       );
+    }
+    if (!scriptURL) {
+      throw new Error('No scriptURL supplied. Please provide a scriptURL');
     }
 
     await ctx.audioWorklet.addModule(scriptURL);
@@ -138,8 +140,8 @@ export function useAudio({
   async function createAnalyser(
     ctx: AudioContext,
     opts: AnalyserOptions = {},
-    subscriber: (data: Uint8Array) => void,
-  ) {
+    subscriber?: (data: Uint8Array) => void,
+  ): Promise<AnalyserNode> {
     if (!subscriber) {
       throw new Error('No subscriber. Please provide a subscriber function');
     }
@@ -150,9 +152,11 @@ export function useAudio({
 
     function tick() {
       analyser.getByteTimeDomainData(dataArray);
-      subscriber(dataArray);
+      subscriber?.(dataArray);
       rafId.current = requestAnimationFrame(tick);
     }
+
+    return analyser;
   }
 
   const teardown = async () => {
@@ -182,7 +186,7 @@ export function useAudio({
     mediaStreamSource,
     playbackURL,
     createAudioContext,
-    createAudioProcessor,
+    createWorkletProcessor,
     createAnalyser,
     createMediaRecorder,
     startStream,

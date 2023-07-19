@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { io, Socket, SocketOptions, ManagerOptions } from 'socket.io-client';
 
 export function useSocket(
@@ -8,6 +8,9 @@ export function useSocket(
   const socket = useRef<Socket | null>(null);
 
   const init = useCallback(() => {
+    console.log('initing', url, options);
+
+    disconnect();
     socket.current = io(url, options);
     socket.current?.on('connect', () => {
       console.log('connected');
@@ -22,6 +25,13 @@ export function useSocket(
     socket.current?.disconnect();
     socket.current = null;
   };
+
+  useEffect(() => {
+    return () => {
+      console.log('disconnecting sockets');
+      disconnect();
+    };
+  }, []);
 
   return { instance: socket.current, init, disconnect };
 }

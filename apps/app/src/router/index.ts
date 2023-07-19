@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
-import Home from '@/pages/home/home';
-import RecordingPage from '@/pages/recording/recording';
+import Home from '@/pages/home';
+import RecordingPage from '@/pages/recorder';
 
 export const router = createBrowserRouter([
   {

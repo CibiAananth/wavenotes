@@ -3,14 +3,16 @@ import { Buffer } from 'buffer';
 
 import {
   combinePCMChunks,
-  scriptURL,
   DEFAULT_SAMPLE_RATE,
   DEFAULT_SAMPLE_SIZE,
-  writeWavHeaders,
   WAV_MIME_TYPE,
+  workletScriptURL,
+  WORKLET_NAME,
+  writeWavHeaders,
 } from '@/lib/audio';
 import { useAudio } from './useAudio';
 import { useSocket } from './useSocket';
+import { useVisualizer } from './useVisualizer';
 
 const SAMPLE_RATE = DEFAULT_SAMPLE_RATE; // in hertz
 const SAMPLE_SIZE = DEFAULT_SAMPLE_SIZE; // in bits per linear sample
@@ -29,14 +31,15 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       sampleSize: SAMPLE_SIZE,
     },
   });
-
   const socket = useSocket('http://localhost:3333', {
     path: '/custom/',
   });
+  const visualizer = useVisualizer();
 
   const chunksInPCMRef = useRef<Int16Array | null>(null);
   const bufferIntervalId = useRef<number | null>(null);
 
+  const [liveStatus, setLiveStatus] = useState<boolean>(false);
   const [recordingInPCM, setRecordingInPCM] = useState<Int16Array | null>(null);
   const [chunksInPCM, setChunksInPCM] = useState<Int16Array | null>(null);
   const [startInterval, setStartInterval] = useState<boolean>(false);
@@ -44,13 +47,18 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
   const [playBackURL, setPlayBackURL] = useState<string>('');
 
   useEffect(() => {
-    socket.instance?.on('transcript', (data: string) => {
-      setTranscript(data);
+    socket.instance?.on('connect', () => {
+      setLiveStatus(true);
     });
 
-    return () => {
-      socket.instance?.off('transcript');
-    };
+    socket.instance?.on('disconnect', () => {
+      setLiveStatus(false);
+    });
+
+    socket.instance?.on('transcript', (data: string) => {
+      console.log('transcript', data);
+      setTranscript(data);
+    });
   }, [socket.instance]);
 
   useEffect(() => {
@@ -59,7 +67,6 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       bufferIntervalId.current = window.setInterval(() => {
         if (chunksInPCMRef.current?.length) {
           const pcmChunk = Buffer.from(chunksInPCMRef.current.buffer);
-          console.log(pcmChunk.byteLength, socket.instance);
           socket.instance?.emit('pcmChunk', pcmChunk); // Sending the audio chunk
           setChunksInPCM(null); // Reset the chunk for the next interval
         }
@@ -73,7 +80,7 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
     };
   }, [chunksInPCM, startInterval, audio.channelCount, socket.instance]);
 
-  const processor = useCallback(
+  const workletProcessor = useCallback(
     async (data: Float32Array[]) => {
       if (!startInterval) setStartInterval(true);
 
@@ -109,34 +116,27 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       socket.init();
       const stream = await audio.startStream();
       const { ctx, source } = await audio.createAudioContext(stream);
-      const worklet = await audio.createAudioProcessor(
+
+      const worklet = await audio.createWorkletProcessor(
         ctx,
-        'audioProcessor',
-        scriptURL,
-        ctx.destination,
-        processor,
+        WORKLET_NAME,
+        workletScriptURL,
+        workletProcessor,
       );
-      source.connect(worklet);
+      const analyser = await audio.createAnalyser(
+        ctx,
+        OPTIONS_ANALYSER,
+        visualizer.setAudioData,
+      );
+
+      source.connect(analyser);
+      analyser.connect(worklet);
+      worklet.connect(ctx.destination);
     } catch (error) {
       console.log(error);
       throw error;
     }
-  }, [audio, processor, socket]);
-
-  const destroy = useCallback(async () => {
-    await audio.stopStream();
-    socket.disconnect();
-    setStartInterval(false);
-    setRecordingInPCM(null);
-    setChunksInPCM(null);
-    setPlayBackURL('');
-    setTranscript(null);
-
-    if (bufferIntervalId.current) {
-      window.clearInterval(bufferIntervalId.current);
-      bufferIntervalId.current = null;
-    }
-  }, [audio, socket]);
+  }, [socket, audio, workletProcessor, visualizer.setAudioData]);
 
   const stop = useCallback(async () => {
     try {
@@ -179,6 +179,21 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
     audio.audioElRef.current?.play();
   }, [audio.audioElRef, getPlayBackURL]);
 
+  const destroy = useCallback(async () => {
+    await audio.stopStream();
+    socket.disconnect();
+    setStartInterval(false);
+    setRecordingInPCM(null);
+    setChunksInPCM(null);
+    setPlayBackURL('');
+    setTranscript(null);
+
+    if (bufferIntervalId.current) {
+      window.clearInterval(bufferIntervalId.current);
+      bufferIntervalId.current = null;
+    }
+  }, [audio, socket]);
+
   useEffect(() => {
     return () => {
       console.log('destroying');
@@ -188,8 +203,10 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
 
   return {
     audioElRef: audio.audioElRef,
-    transcript,
+    liveStatus,
     playBackURL,
+    transcript,
+    visualizerCanvasRef: visualizer.canvasRef,
     destroy,
     getPlayBackURL,
     play,

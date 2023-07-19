@@ -1,3 +1,5 @@
+import { useMemo, type ReactNode } from 'react';
+
 import {
   Select,
   SelectContent,
@@ -7,10 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useDeviceState } from '@/context/device-context';
-import { useMemo } from 'react';
+import { useDeviceState } from '@/context/device-provider';
 
-export function DeviceSelect() {
+export function DeviceSelect(): ReactNode {
   const { devices, changeDevice, activeDevice, hasActiveDevice } =
     useDeviceState();
 
@@ -21,7 +22,7 @@ export function DeviceSelect() {
 
   return (
     <Select value={selectedDevice} onValueChange={changeDevice}>
-      <SelectTrigger className="w-[500px]">
+      <SelectTrigger>
         <SelectValue placeholder="Select an input device" />
       </SelectTrigger>
       <SelectContent>

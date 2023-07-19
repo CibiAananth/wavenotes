@@ -4,8 +4,9 @@ import * as ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { router } from '@/router';
 
+import { DeviceProvider } from '@/context/device-provider';
 import { ThemeProvider } from '@/context/theme-provider';
-import { UserProvider } from '@/context/user-context';
+import { UserProvider } from '@/context/auth-provider';
 
 import AppShell from '@/components/layout/app-shell';
 
@@ -16,9 +17,11 @@ root.render(
   <StrictMode>
     <ThemeProvider>
       <UserProvider>
-        <AppShell>
-          <RouterProvider router={router} />
-        </AppShell>
+        <DeviceProvider>
+          <AppShell>
+            <RouterProvider router={router} />
+          </AppShell>
+        </DeviceProvider>
       </UserProvider>
     </ThemeProvider>
   </StrictMode>,

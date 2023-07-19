@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 
 export type ThemeType = 'light' | 'dark';
+
 type ThemeContextType = {
   theme: ThemeType;
   toggleTheme: (newTheme: ThemeType) => void;

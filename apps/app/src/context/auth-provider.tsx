@@ -8,16 +8,7 @@ import React, {
 } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-
-const randomUsername = () => {
-  return `U${Math.random().toString().slice(-3)}${Date.now()
-    .toString()
-    .slice(-5)}@acme.com`;
-};
-
-const randomPassword = () => {
-  return Math.random().toString(36).slice(-8);
-};
+import { randomPassword, randomUsername } from './util';
 
 type SessionType = Partial<Session>;
 
@@ -30,6 +21,16 @@ type CredentialsType = {
   password: string;
 };
 
+type SignUpData = {
+  username: string;
+};
+
+type SignUpOptions =
+  | {
+      data: SignUpData;
+    }
+  | Record<string, never>;
+
 type UserContextType = {
   user: UserType | null;
   session: SessionType | null;
@@ -37,8 +38,8 @@ type UserContextType = {
 };
 
 export const UserContext = createContext<UserContextType>({
-  user: {} as UserType,
-  session: {} as SessionType,
+  user: null,
+  session: null,
   logoutUser: () => console.warn('no user provider'),
 });
 
@@ -56,22 +57,33 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
     })();
   }, []);
 
-  const signUp = useCallback(async ({ email, password }: CredentialsType) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      throw new Error('Could not create user');
-    }
-    return data;
-  }, []);
+  const signUp = useCallback(
+    async (credentials: CredentialsType, options: SignUpOptions = {}) => {
+      const { data, error } = await supabase.auth.signUp({
+        ...credentials,
+        options,
+      });
+
+      if (error) {
+        throw new Error('Could not create user');
+      }
+      return data;
+    },
+    [],
+  );
 
   const createNewUser = useCallback(async () => {
     const username = randomUsername();
     const credentials: CredentialsType = {
-      email: username,
+      email: `${username}@acme.com`,
       password: randomPassword(),
     };
-    const { user, session } = await signUp(credentials);
-    const newUser = { name: user?.email, email: user?.email, id: user?.id };
+    const { user, session } = await signUp(credentials, {
+      data: {
+        username,
+      },
+    });
+    const newUser = { name: username, email: user?.email, id: user?.id };
     setUser(newUser);
     setSession(session);
   }, [signUp]);
@@ -87,6 +99,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
         await createNewUser();
         return;
       }
+
       setSession(data.session);
 
       const { data: { user: userData } = {}, error: userError } =
@@ -102,7 +115,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
       // simple check to see if the user is valid
       if (userData?.id) {
         const newUser = {
-          name: userData.email,
+          name: userData?.user_metadata?.username ?? userData.email,
           email: userData.email,
           id: userData.id,
         };
