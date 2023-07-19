@@ -120,7 +120,6 @@ export function useAudio({
 
     await ctx.audioWorklet.addModule(scriptURL);
     const worklet = new AudioWorkletNode(ctx, name);
-    console.log('adddd');
     setChannelCount(worklet.channelCount);
 
     if (subscriber) {

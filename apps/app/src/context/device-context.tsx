@@ -1,16 +1,20 @@
 import { createContext, useContext } from 'react';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export type DeviceContextType = {
   devices: MediaDeviceInfo[];
-  setActiveDevice: Dispatch<SetStateAction<string | null>> | (() => void);
+  changeDevice: (deviceId: string | null) => void;
+  hasActiveDevice: (deviceId: string | null) => boolean;
   activeDevice: string | null;
 };
 
 export const DeviceContext = createContext<DeviceContextType>({
   devices: [],
-  setActiveDevice: () => {
-    console.error('set active device function must be overridden');
+  changeDevice: () => {
+    console.error('changeDevice function must be overridden');
+  },
+  hasActiveDevice: () => {
+    return false;
   },
   activeDevice: null,
 });
@@ -26,8 +30,23 @@ export function DeviceProvider({
   const [activeDevice, setActiveDevice] = useState<string | null>(null);
 
   useEffect(() => {
-    navigator.mediaDevices.enumerateDevices().then((devices) => {
-      const audioInput = devices.filter((device) => device.kind === kind);
+    const persistedDeviceId = window.localStorage.getItem('deviceId');
+    setActiveDevice(persistedDeviceId);
+  }, []);
+
+  function changeDevice(deviceId: string | null) {
+    window.localStorage.setItem('deviceId', deviceId || '');
+    setActiveDevice(deviceId);
+  }
+
+  function hasActiveDevice(deviceId: string | null): boolean {
+    if (!deviceId) return false;
+    return devices.some(device => device.deviceId === deviceId);
+  }
+
+  useEffect(() => {
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+      const audioInput = devices.filter(device => device.kind === kind);
       setDevices(audioInput);
     });
   }, [kind, setDevices]);
@@ -35,9 +54,10 @@ export function DeviceProvider({
   return (
     <DeviceContext.Provider
       value={{
-        devices,
-        setActiveDevice,
         activeDevice,
+        devices,
+        changeDevice,
+        hasActiveDevice,
       }}
     >
       {children}

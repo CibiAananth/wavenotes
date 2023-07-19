@@ -3,18 +3,17 @@ import { io, Socket, SocketOptions, ManagerOptions } from 'socket.io-client';
 
 export function useSocket(
   url: string,
-  options: Partial<ManagerOptions & SocketOptions> = {}
+  options: Partial<ManagerOptions & SocketOptions> = {},
 ) {
   const socket = useRef<Socket | null>(null);
 
   const init = useCallback(() => {
     socket.current = io(url, options);
-
-    socket.current.on('connect', () => {
+    socket.current?.on('connect', () => {
       console.log('connected');
     });
 
-    socket.current.on('disconnect', () => {
+    socket.current?.on('disconnect', () => {
       console.log('disconnected');
     });
   }, [url, options]);

@@ -8,23 +8,26 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useDeviceState } from '@/context/device-context';
+import { useMemo } from 'react';
 
 export function DeviceSelect() {
-  const { devices, setActiveDevice } = useDeviceState();
+  const { devices, changeDevice, activeDevice, hasActiveDevice } =
+    useDeviceState();
 
-  const handleDeviceChange = (deviceId: string) => {
-    setActiveDevice(deviceId);
-  };
+  const selectedDevice = useMemo(() => {
+    if (!activeDevice?.length) return undefined;
+    return hasActiveDevice(activeDevice) ? activeDevice : undefined;
+  }, [activeDevice, hasActiveDevice]);
 
   return (
-    <Select onValueChange={handleDeviceChange}>
+    <Select value={selectedDevice} onValueChange={changeDevice}>
       <SelectTrigger className="w-[500px]">
         <SelectValue placeholder="Select an input device" />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
           <SelectLabel>Audio Inputs</SelectLabel>
-          {devices.map((device) => (
+          {devices.map(device => (
             <SelectItem key={device.deviceId} value={device.deviceId}>
               {device.label}
             </SelectItem>

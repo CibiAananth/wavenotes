@@ -17,7 +17,7 @@ export const workletScript = `class AudioProcessor extends AudioWorkletProcessor
     // }
 
     for (let channel = 0; channel < output.length; ++channel) {
-      output[channel].set(input[channel]);
+      // output[channel].set(input[channel]);
     }
     this.port.postMessage(input);
     return true;

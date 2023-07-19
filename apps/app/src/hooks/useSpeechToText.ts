@@ -29,7 +29,8 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       sampleSize: SAMPLE_SIZE,
     },
   });
-  const socket = useSocket(import.meta.env.VITE_SOCKET_URL as string, {
+
+  const socket = useSocket('http://localhost:3333', {
     path: '/custom/',
   });
 
@@ -58,6 +59,7 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       bufferIntervalId.current = window.setInterval(() => {
         if (chunksInPCMRef.current?.length) {
           const pcmChunk = Buffer.from(chunksInPCMRef.current.buffer);
+          console.log(pcmChunk.byteLength, socket.instance);
           socket.instance?.emit('pcmChunk', pcmChunk); // Sending the audio chunk
           setChunksInPCM(null); // Reset the chunk for the next interval
         }
@@ -107,7 +109,6 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       socket.init();
       const stream = await audio.startStream();
       const { ctx, source } = await audio.createAudioContext(stream);
-      console.log(ctx);
       const worklet = await audio.createAudioProcessor(
         ctx,
         'audioProcessor',
@@ -128,6 +129,8 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
     setStartInterval(false);
     setRecordingInPCM(null);
     setChunksInPCM(null);
+    setPlayBackURL('');
+    setTranscript(null);
 
     if (bufferIntervalId.current) {
       window.clearInterval(bufferIntervalId.current);
@@ -184,12 +187,13 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
   }, []);
 
   return {
-    start,
-    transcript,
-    stop,
-    play,
-    getPlayBackURL,
-    playBackURL,
     audioElRef: audio.audioElRef,
+    transcript,
+    playBackURL,
+    destroy,
+    getPlayBackURL,
+    play,
+    start,
+    stop,
   };
 }
