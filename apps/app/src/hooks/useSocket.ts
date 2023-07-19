@@ -9,8 +9,6 @@ export function useSocket(
 
   const init = useCallback(() => {
     console.log('initing', url, options);
-
-    disconnect();
     socket.current = io(url, options);
     socket.current?.on('connect', () => {
       console.log('connected');

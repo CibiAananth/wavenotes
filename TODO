@@ -1,0 +1,9 @@
+1. Encrypt audio files before upload
+2. Delete audio files
+3. Play/Pause while recording
+4. Subtitle-like transcription
+5. socket authentication
+6. Recordings page with details
+7. Play in recording table
+8. View entire transcription in table
+9. Cache the network calls

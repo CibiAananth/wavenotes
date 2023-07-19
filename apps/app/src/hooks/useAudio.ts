@@ -18,7 +18,6 @@ export function useAudio({
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [mediaStreamSource, setMediaStreamSource] =
     useState<MediaStreamAudioSourceNode | null>(null);
-  const [channelCount, setChannelCount] = useState<number>(1);
   const [mediaRecorderChunks, setMediaRecorderChunks] = useState<Blob[]>([]);
   const [playbackURL, setPlaybackURL] = useState<string>('');
 
@@ -122,7 +121,6 @@ export function useAudio({
 
     await ctx.audioWorklet.addModule(scriptURL);
     const worklet = new AudioWorkletNode(ctx, name);
-    setChannelCount(worklet.channelCount);
 
     if (subscriber) {
       worklet.port.onmessage = event => {
@@ -182,7 +180,6 @@ export function useAudio({
     audioElRef,
     audioStream,
     audioContext,
-    channelCount,
     mediaStreamSource,
     playbackURL,
     createAudioContext,

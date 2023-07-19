@@ -39,6 +39,7 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
   const chunksInPCMRef = useRef<Int16Array | null>(null);
   const bufferIntervalId = useRef<number | null>(null);
 
+  const [channelCount, setChannelCount] = useState<number>(1);
   const [liveStatus, setLiveStatus] = useState<boolean>(false);
   const [recordingInPCM, setRecordingInPCM] = useState<Int16Array | null>(null);
   const [chunksInPCM, setChunksInPCM] = useState<Int16Array | null>(null);
@@ -59,6 +60,12 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       console.log('transcript', data);
       setTranscript(data);
     });
+
+    return () => {
+      socket.instance?.off('connect');
+      socket.instance?.off('disconnect');
+      socket.instance?.off('transcript');
+    };
   }, [socket.instance]);
 
   useEffect(() => {
@@ -78,7 +85,7 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
         clearInterval(bufferIntervalId.current);
       }
     };
-  }, [chunksInPCM, startInterval, audio.channelCount, socket.instance]);
+  }, [chunksInPCM, startInterval, channelCount, socket.instance]);
 
   const workletProcessor = useCallback(
     async (data: Float32Array[]) => {
@@ -113,7 +120,9 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
 
   const start = useCallback(async () => {
     try {
-      socket.init();
+      if (!socket.instance?.active) {
+        socket.init();
+      }
       const stream = await audio.startStream();
       const { ctx, source } = await audio.createAudioContext(stream);
 
@@ -123,6 +132,8 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
         workletScriptURL,
         workletProcessor,
       );
+      setChannelCount(worklet.channelCount);
+
       const analyser = await audio.createAnalyser(
         ctx,
         OPTIONS_ANALYSER,
@@ -136,40 +147,41 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       console.log(error);
       throw error;
     }
-  }, [socket, audio, workletProcessor, visualizer.setAudioData]);
+  }, [socket, audio, workletProcessor, visualizer]);
 
   const stop = useCallback(async () => {
     try {
       setPlayBackURL(getPlayBackURL() as string);
 
       await audio.stopStream();
-      socket.disconnect();
       setStartInterval(false);
 
       if (bufferIntervalId.current) {
         window.clearInterval(bufferIntervalId.current);
         bufferIntervalId.current = null;
       }
+
+      visualizer.setAudioData(new Uint8Array(0));
     } catch (error) {
       console.log(error);
       throw error;
     }
-  }, [audio, socket]);
+  }, [audio, visualizer]);
 
-  const getPlayBackURL = useCallback(() => {
+  const getPlayBackURL = () => {
     if (recordingInPCM?.length === 0) {
       return null;
     }
     const wavBuffer = writeWavHeaders(
       recordingInPCM as Int16Array,
-      audio.channelCount,
+      channelCount,
     );
     const blobUrl = URL.createObjectURL(
       new Blob([wavBuffer], { type: WAV_MIME_TYPE }),
     );
 
     return blobUrl;
-  }, [audio.channelCount, recordingInPCM]);
+  };
 
   const play = useCallback(async () => {
     if (!audio.audioElRef.current || !getPlayBackURL()?.length) {
@@ -177,11 +189,10 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
     }
     audio.audioElRef.current.src = getPlayBackURL() as string;
     audio.audioElRef.current?.play();
-  }, [audio.audioElRef, getPlayBackURL]);
+  }, [audio.audioElRef]);
 
   const destroy = useCallback(async () => {
     await audio.stopStream();
-    socket.disconnect();
     setStartInterval(false);
     setRecordingInPCM(null);
     setChunksInPCM(null);
@@ -192,7 +203,7 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       window.clearInterval(bufferIntervalId.current);
       bufferIntervalId.current = null;
     }
-  }, [audio, socket]);
+  }, [audio]);
 
   useEffect(() => {
     return () => {
@@ -203,11 +214,14 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
 
   return {
     audioElRef: audio.audioElRef,
+    channelCount,
     liveStatus,
     playBackURL,
+    recordingInPCM,
     transcript,
     visualizerCanvasRef: visualizer.canvasRef,
     destroy,
+    setPlayBackURL,
     getPlayBackURL,
     play,
     start,

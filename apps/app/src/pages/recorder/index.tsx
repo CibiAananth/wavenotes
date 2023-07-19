@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { cva } from 'class-variance-authority';
-import { useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useMachine } from '@xstate/react';
 import {
   Microphone as MicIcon,
@@ -17,28 +17,30 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ToastAction } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/use-toast';
+import { Toaster } from '@/components/ui/toaster';
 
 import { DeviceSelect } from './device-select';
 import { type RecorderEventType, recorderMachine } from './recorder-machine';
+import { supabase } from '@/lib/supabase';
+import { WAV_MIME_TYPE, writeWavHeaders } from '@/lib/audio';
+import { useAuth } from '@/context/auth-provider';
+import { CircleIcon } from '@radix-ui/react-icons';
 
 type RecorderActionsType = {
   [K in RecorderEventType['type']]: () => void;
 };
 
 export default function _Root() {
-  const location = useLocation();
-
-  const handleGoBack = () => {
-    window.history.back();
-  };
+  const navigate = useNavigate();
 
   return (
     <div className="mb-10 py-5">
-      {location.key !== 'default' && (
-        <Button onClick={handleGoBack} variant="outline">
-          <ArrowLeftIcon className="mr-2 h-4 w-4" /> Back
-        </Button>
-      )}
+      <Toaster />
+      <Button onClick={() => navigate('/')} variant="outline">
+        <ArrowLeftIcon className="mr-2 h-4 w-4" /> Back to Dashboard
+      </Button>
       <Recording />
     </div>
   );
@@ -58,31 +60,87 @@ const liveBadgeVariants = cva('bg-primary', {
 
 function Recording() {
   // Get the active device from the device context
+  const { user } = useAuth();
   const { activeDevice, hasActiveDevice } = useDeviceState();
   const speechToText = useSpeechToText({ deviceId: activeDevice });
+  const { toast } = useToast();
 
   // Create a new instance of the state machine
   const [current, send] = useMachine(recorderMachine);
   const { value: recordingState } = current;
 
+  const [fileUploadState, setFileUploadState] = useState<{
+    isUploading: boolean;
+    hasError: boolean;
+    message: string | null;
+  }>({
+    isUploading: false,
+    hasError: false,
+    message: null,
+  });
   const audioElRef = useRef<HTMLAudioElement>(null);
+
+  const uploadFile = async () => {
+    setFileUploadState({
+      isUploading: true,
+      hasError: false,
+      message: null,
+    });
+
+    const wavBuffer = writeWavHeaders(
+      speechToText.recordingInPCM as Int16Array,
+      speechToText.channelCount,
+    );
+
+    const blob = new Blob([wavBuffer], { type: WAV_MIME_TYPE });
+
+    const { error } = await supabase.storage
+      .from('recording')
+      .upload(`${user?.id}/${Date.now()}.wav`, blob, {
+        cacheControl: '86400', // 1 day
+        contentType: WAV_MIME_TYPE,
+      });
+
+    if (error) {
+      console.log(error);
+      toast({
+        variant: 'destructive',
+        title: 'Uh oh! Something went wrong.',
+        description: 'There was a problem while uploading the file.',
+        action: (
+          <ToastAction altText="Try again" onClick={uploadFile}>
+            Try again
+          </ToastAction>
+        ),
+      });
+      return;
+    }
+
+    toast({
+      title: 'Sweet!',
+      description: 'Your recording has been saved successfully.',
+    });
+
+    setFileUploadState({
+      isUploading: false,
+      hasError: !!error,
+      message: error,
+    });
+  };
 
   const recorderActions: RecorderActionsType = {
     RECORD: async () => {
-      console.log('RECORD');
       speechToText.start();
     },
     STOP: async () => {
-      console.log('STOP');
       speechToText.stop();
     },
     START: async () => {
-      console.log('START');
       speechToText.destroy();
       speechToText.start();
     },
     SAVE: async () => {
-      console.log('SAVE');
+      uploadFile();
     },
   };
 
@@ -90,6 +148,10 @@ function Recording() {
     send({ type: action });
     recorderActions[action]?.();
   };
+
+  const isTranscribing = useMemo(() => {
+    return speechToText.liveStatus && recordingState === 'recording';
+  }, [recordingState, speechToText.liveStatus]);
 
   const selectedDevice = useMemo(() => {
     if (!activeDevice?.length) return undefined;
@@ -108,22 +170,20 @@ function Recording() {
 
   return (
     <div className="w-full h-[500px] flex justify-center">
-      <div className="w-4/6 rounded-md border p-2">
-        <div className="w-full  flex items-start justify-between">
-          <div className="w-3/6">
+      <div className="w-full mt-5 rounded-md border p-2">
+        <div className="flex items-start justify-between">
+          <div className="w-4/12">
             <DeviceSelect />
           </div>
           <Badge
             className={cn(
               liveBadgeVariants({
-                variant: speechToText.liveStatus ? 'online' : 'offline',
+                variant: isTranscribing ? 'online' : 'offline',
               }),
-              speechToText.liveStatus ? 'animate-pulse' : '',
+              isTranscribing ? 'animate-pulse' : '',
             )}
           >
-            {speechToText.liveStatus
-              ? 'Transcribing'
-              : 'Speech to Text: Inactive'}
+            {isTranscribing ? 'Transcribing' : 'Speech to Text: Inactive'}
           </Badge>
         </div>
 
@@ -137,7 +197,7 @@ function Recording() {
                   controls
                 />
               ) : (
-                <div className="w-300">
+                <div className="w-2/4">
                   <canvas ref={speechToText.visualizerCanvasRef} id="canvas" />
                 </div>
               )}
@@ -165,8 +225,13 @@ function Recording() {
                     variant="outline"
                     className="ml-3"
                     onClick={() => handleRecorderAction('SAVE')}
+                    disabled={fileUploadState.isUploading}
                   >
-                    <SaveIcon className="mr-2 h-4 w-4" />
+                    {fileUploadState.isUploading ? (
+                      <CircleIcon className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <SaveIcon className="mr-2 h-4 w-4" />
+                    )}
                     Save
                   </Button>
                 </>
@@ -181,7 +246,7 @@ function Recording() {
         )}
 
         <div className="mt-5 flex justify-center items-center">
-          {speechToText.liveStatus &&
+          {isTranscribing &&
             (speechToText.transcript ? (
               <p className="w-1/2 text-sm text-center line-clamp-3">
                 {speechToText.transcript}
@@ -198,10 +263,3 @@ function Recording() {
     </div>
   );
 }
-
-// display: -webkit-box;
-// -webkit-line-clamp: 3;
-// -webkit-box-orient: vertical;
-// text-overflow: ellipsis;
-// overflow: hidden;
-// width: 400px;

@@ -18,11 +18,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user, session } = useAuth();
 
   return (
-    <div className="p-3 h-screen">
-      <div className="absolute top-4 right-4">
+    <div className="p-5 h-screen">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-semibold">Bienvenue!</h2>
         <ThemeToggle />
       </div>
-      <h2 className="text-3xl font-semibold">Bienvenue!</h2>
       <h3 className="text-md mt-2">
         Create recordings and get transcriptions in real-time
       </h3>
@@ -47,19 +47,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {user && (
           <>
             <div className="flex items-center">
-              <p className="text-md">
-                You are logged in as{' '}
-                <strong>
-                  <i>{user.name}</i>
-                </strong>
+              <p className="text-sm text-muted-foreground">
+                You are logged in as
+                <strong>{` "${user.name}"`}</strong>
               </p>
               <HoverCard>
                 <HoverCardTrigger asChild>
                   <QuestionIcon className="ml-1 hover:cursor-pointer" />
                 </HoverCardTrigger>
                 <HoverCardContent className="w-80">
-                  <div className="">
-                    <p className="text-sm">
+                  <>
+                    <p className="text-xs">
                       To enable an experience for storing and retrieving
                       recordings, an <mark>anonymous user</mark> is created for
                       you automatically.
@@ -68,7 +66,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       Note: You will be able to view the recording only in the
                       browser where you recorded them
                     </p>
-                  </div>
+                  </>
                 </HoverCardContent>
               </HoverCard>
             </div>

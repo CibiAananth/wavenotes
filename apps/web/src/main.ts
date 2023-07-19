@@ -53,7 +53,7 @@ io.on('connection', socket => {
    */
   let pcmBuffer = Buffer.alloc(0);
   socket.on('pcmChunk', (data: Buffer) => {
-    // recognizeStream.write(data);
+    recognizeStream.write(data);
     pcmBuffer = Buffer.concat([pcmBuffer, data]);
   });
 

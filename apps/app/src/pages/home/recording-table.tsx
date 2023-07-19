@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   ColumnDef,
   flexRender,
@@ -5,7 +6,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
+
 import {
   Table,
   TableBody,
@@ -14,147 +15,111 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { AudioControlCell } from './components/audio-control-cell';
 
-export type Payment = {
-  id: string;
-  amount: number;
-  status: 'pending' | 'processing' | 'success' | 'failed';
-  email: string;
+import { bytesToReadableString } from '@/lib/utils';
+
+export type MetadataType = {
+  eTag: string;
+  size: number;
+  mimetype: string;
+  cacheControl: string;
+  lastModified: string;
+  contentLength: number;
+  httpStatusCode: number;
 };
 
-export const payments: Payment[] = [
+export type FileType = {
+  name: string;
+  id: string;
+  updated_at: string;
+  created_at: string;
+  last_accessed_at: string;
+  metadata: MetadataType;
+};
+
+export type Recording = FileType & {
+  metadata: MetadataType;
+};
+
+export const recordings: Recording[] = [
   {
-    id: '728ed52f',
-    amount: 100,
-    status: 'pending',
-    email: 'm@example.com',
-  },
-  {
-    id: '489e1d42',
-    amount: 125,
-    status: 'processing',
-    email: 'example@gmail.com',
-  },
-  {
-    id: '728ed52f',
-    amount: 100,
-    status: 'pending',
-    email: 'm@example.com',
-  },
-  {
-    id: '489e1d42',
-    amount: 125,
-    status: 'processing',
-    email: 'example@gmail.com',
-  },
-  {
-    id: '728ed52f',
-    amount: 100,
-    status: 'pending',
-    email: 'm@example.com',
-  },
-  {
-    id: '489e1d42',
-    amount: 125,
-    status: 'processing',
-    email: 'example@gmail.com',
-  },
-  {
-    id: '728ed52f',
-    amount: 100,
-    status: 'pending',
-    email: 'm@example.com',
-  },
-  {
-    id: '489e1d42',
-    amount: 125,
-    status: 'processing',
-    email: 'example@gmail.com',
-  },
-  {
-    id: '728ed52f',
-    amount: 100,
-    status: 'pending',
-    email: 'm@example.com',
-  },
-  {
-    id: '489e1d42',
-    amount: 125,
-    status: 'processing',
-    email: 'example@gmail.com',
-  },
-  {
-    id: '728ed52f',
-    amount: 100,
-    status: 'pending',
-    email: 'm@example.com',
-  },
-  {
-    id: '489e1d42',
-    amount: 125,
-    status: 'processing',
-    email: 'example@gmail.com',
-  },
-  {
-    id: '728ed52f',
-    amount: 100,
-    status: 'pending',
-    email: 'm@example.com',
-  },
-  {
-    id: '489e1d42',
-    amount: 125,
-    status: 'processing',
-    email: 'example@gmail.com',
+    name: '1689788760814.wav',
+    id: '242876e7-7ab7-4451-92af-84083eaeb4e7',
+    updated_at: '2023-07-19T17:46:03.091457+00:00',
+    created_at: '2023-07-19T17:46:02.5421+00:00',
+    last_accessed_at: '2023-07-19T17:46:02.5421+00:00',
+    metadata: {
+      eTag: '"65123979fd4edc36b50d373d7b17a575"',
+      size: 410668,
+      mimetype: 'audio/wav',
+      cacheControl: 'max-age=86400',
+      lastModified: '2023-07-19T17:46:03.000Z',
+      contentLength: 410668,
+      httpStatusCode: 200,
+    },
   },
 ];
 
-export const columns: ColumnDef<Payment>[] = [
+const columns: ColumnDef<Recording>[] = [
   {
-    accessorKey: 'status',
-    header: 'Status',
+    accessorKey: 'name',
+    header: 'Name',
   },
   {
-    accessorKey: 'email',
-    header: 'Email',
+    accessorKey: 'id',
+    header: 'ID',
   },
   {
-    accessorKey: 'amount',
-    header: 'Amount',
+    accessorKey: 'created_at',
+    header: 'Created At',
+    cell: value => {
+      return new Date(value.getValue() as Date).toLocaleString();
+    },
+  },
+  {
+    accessorKey: 'metadata.size',
+    header: 'Size',
+    cell: value => bytesToReadableString(value.getValue() as number),
+  },
+  {
+    id: 'actions',
+    enableHiding: false,
+    cell: AudioControlCell,
   },
 ];
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-}
+export function RecordingTable({ data }: { data: Recording[] }) {
+  const [activeRowPlayback, setActiveRowPlayback] = useState<
+    string | number | null
+  >(null);
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-}: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    meta: {
+      activeRowPlayback,
+      setActiveRowPlayback,
+    },
   });
 
   return (
-    <div>
-      <div className="rounded-md">
+    <div className="h-full rounded-md border">
+      <div className="h-full">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
+            {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
+                {headerGroup.headers.map(header => {
                   return (
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );
@@ -164,16 +129,16 @@ export function DataTable<TData, TValue>({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
+              table.getRowModel().rows.map(row => (
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
                 >
-                  {row.getVisibleCells().map((cell) => (
+                  {row.getVisibleCells().map(cell => (
                     <TableCell key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}
@@ -191,24 +156,6 @@ export function DataTable<TData, TValue>({
             )}
           </TableBody>
         </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Next
-        </Button>
       </div>
     </div>
   );

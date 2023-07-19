@@ -6,20 +6,19 @@ export function useVisualizer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   (() => {
-    if (!canvasRef.current) {
-      return;
-    }
+    if (!canvasRef.current) return false;
+
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d')!;
-    const width = canvas.width;
-    const height = canvas.height;
+    const context = canvas?.getContext('2d') as CanvasRenderingContext2D;
+    const width = canvas?.width as number;
+    const height = canvas?.height as number;
+    context.clearRect(0, 0, width, height);
 
     let x = 0;
     const sliceWidth = (width * 1.0) / audioData.length;
 
     context.lineWidth = 2;
     context.strokeStyle = '#000000';
-    context.clearRect(0, 0, width, height);
 
     context.beginPath();
     context.moveTo(0, height / 2);
