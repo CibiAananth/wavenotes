@@ -45,6 +45,11 @@ export const AudioControlCell = ({
   );
   const { activeRowPlayback, setActiveRowPlayback } = table.options.meta;
 
+  const endPlayback = useCallback(() => {
+    setMediaState('paused');
+    setActiveRowPlayback(null);
+  }, [setActiveRowPlayback]);
+
   useEffect(() => {
     if (activeRowPlayback !== rowId) {
       audioElementRef.current?.pause();
@@ -59,13 +64,18 @@ export const AudioControlCell = ({
       if (!audioElementRef.current) {
         audioElementRef.current = document.createElement('audio');
         audioElementRef.current.src = row.original.signedURL;
+        audioElementRef.current.addEventListener('ended', endPlayback);
       }
       audioElementRef.current?.play();
     }
     if (mediaState === 'paused') {
       audioElementRef.current?.pause();
     }
-  }, [mediaState]);
+
+    return () => {
+      audioElementRef.current?.removeEventListener('ended', endPlayback);
+    };
+  }, [mediaState, endPlayback]);
 
   const handleMediaStateChange = useCallback(() => {
     if (mediaState === 'playing') {
