@@ -97,11 +97,10 @@ function RecorderView() {
       message: null,
     });
 
-    const filename = `${user?.id}/${Date.now()}`;
-
+    const now = Date.now();
     const audioUploadPromise = supabase.storage
       .from('recording')
-      .upload(`${filename}.wav`, playbackBlob, {
+      .upload(`${user?.id}/rec-${now}.wav`, playbackBlob, {
         upsert: true,
         cacheControl: CACHE_CONTROL,
         contentType: WAV_MIME_TYPE,
@@ -110,7 +109,7 @@ function RecorderView() {
     const transcriptUploadPromise = transcriptBlob?.size
       ? supabase.storage
           .from('recording')
-          .upload(`${filename}.txt`, transcriptBlob, {
+          .upload(`${user?.id}/transc-${now}.txt`, transcriptBlob, {
             upsert: true,
             cacheControl: CACHE_CONTROL,
             contentType: TEXT_MIME_TYPE,

@@ -23,6 +23,7 @@ async function fetchUserRecordings(userId: string | undefined) {
     .from('recording')
     .list(userId, {
       limit: PAGE_LIMIT,
+      search: 'rec',
       sortBy: {
         column: 'created_at',
         order: 'desc',

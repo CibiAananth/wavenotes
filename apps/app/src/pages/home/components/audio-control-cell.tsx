@@ -100,8 +100,6 @@ export const AudioControlCell = ({
   }, [row.original.name, toast, user?.id]);
 
   const handleDelete = useCallback(async () => {
-    console.log('delete');
-
     const { error } = await supabase.storage
       .from('recording')
       .remove([
@@ -115,6 +113,11 @@ export const AudioControlCell = ({
         description: 'Something went wrong while deleting this recording.',
       });
       return;
+    } else {
+      toast({
+        variant: 'default',
+        description: 'Recording deleted successfully. Please refresh the page',
+      });
     }
   }, [row.original.name, toast, user?.id]);
 
@@ -179,11 +182,11 @@ export const AudioControlCell = ({
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="to-red-500" onClick={handleDelete}>
-            Delete recording and transcript
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleDownloadRecording}>
             Download recording
+          </DropdownMenuItem>
+          <DropdownMenuItem className="to-red-500" onClick={handleDelete}>
+            Delete recording and transcript
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
