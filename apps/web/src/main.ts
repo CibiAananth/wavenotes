@@ -3,13 +3,11 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
-import bodyParser from 'body-parser';
-import cookieParser from 'cookie-parser';
 import winston from 'winston';
 
 import * as config from './config';
 import apiRoutes from './routes/api';
-import intiSocketServer from './socket-server';
+import intiSocketServer from './socket/server';
 
 const app = express();
 
@@ -20,18 +18,7 @@ winston.configure({
 /**
  * Configure middleware
  */
-app.use(
-  cors({
-    // origin: `http://localhost:${config.SERVER_PORT}`,
-    origin: function (origin, callback) {
-      return callback(null, true);
-    },
-    optionsSuccessStatus: 200,
-    credentials: true,
-  }),
-  cookieParser(),
-  bodyParser.json(),
-);
+app.use(cors(config.HTTP_CORS_CONFIG));
 
 /**
  * Include all API Routes

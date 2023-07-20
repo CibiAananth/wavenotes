@@ -17,6 +17,15 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/auth-provider';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 
 export const AudioControlCell = ({
   row,
@@ -68,10 +77,11 @@ export const AudioControlCell = ({
     }
   }, [mediaState, rowId, setActiveRowPlayback]);
 
-  const handleTranscriptDownload = useCallback(async () => {
+  const handleDownloadTranscript = useCallback(async () => {
+    const filename = `${row.original.name.split('.wav')[0]}.txt`;
     const { data } = await supabase.storage
       .from('recording')
-      .download(`${user?.id}/${row.original.name.split('.wav')[0]}.txt`);
+      .download(`${user?.id}/${filename}`);
 
     if (!data) {
       toast({
@@ -84,13 +94,53 @@ export const AudioControlCell = ({
     const url = URL.createObjectURL(data);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${row.original.name.split('.wav')[0]}.txt`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-  }, [row.original.name, user]);
+  }, [row.original.name, toast, user?.id]);
+
+  const handleDelete = useCallback(async () => {
+    console.log('delete');
+
+    const { error } = await supabase.storage
+      .from('recording')
+      .remove([
+        `${user?.id}/${row.original.name.split('.wav')[0]}.txt`,
+        `${user?.id}/${row.original.name}`,
+      ]);
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        description: 'Something went wrong while deleting this recording.',
+      });
+      return;
+    }
+  }, [row.original.name, toast, user?.id]);
+
+  const handleDownloadRecording = useCallback(async () => {
+    const { data } = await supabase.storage
+      .from('recording')
+      .download(`${user?.id}/${row.original.name}`);
+
+    if (!data) {
+      toast({
+        variant: 'destructive',
+        description: 'Something went wrong while downloading this recording.',
+      });
+      return;
+    }
+
+    const url = URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = row.original.name;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [row.original.name, toast, user?.id]);
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex items-center justify-center gap-2">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -110,7 +160,7 @@ export const AudioControlCell = ({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button onClick={handleTranscriptDownload} variant="outline">
+            <Button onClick={handleDownloadTranscript} variant="outline">
               <FileArrowDown />
             </Button>
           </TooltipTrigger>
@@ -119,6 +169,24 @@ export const AudioControlCell = ({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <DotsHorizontalIcon className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="to-red-500" onClick={handleDelete}>
+            Delete recording and transcript
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDownloadRecording}>
+            Download recording
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };

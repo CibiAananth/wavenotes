@@ -8,6 +8,11 @@ export const SOCKET_CORS_CONFIG = {
   origin: '*',
   methods: ['GET', 'POST'],
 };
+export const HTTP_CORS_CONFIG = {
+  origin: '*',
+  optionsSuccessStatus: 200,
+  credentials: true,
+};
 
 /**
  * Google Cloud Speech-to-Text

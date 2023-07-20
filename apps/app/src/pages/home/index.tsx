@@ -32,6 +32,10 @@ async function fetchUserRecordings(userId: string | undefined) {
     throw error;
   }
 
+  if (!data?.length) {
+    return [];
+  }
+
   const allFilePaths = data?.map(item => `${userId}/${item.name}`);
 
   const { data: signedURLdata } = await supabase.storage

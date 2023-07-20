@@ -1,5 +1,6 @@
 [] Encrypt audio files before upload
-[] Delete audio files
+[x] Delete audio files
+[] Refresh table after delete
 [] Play/Pause while recording
 [x] CC transcription
 [x] socket authentication
@@ -12,3 +13,4 @@
 [] Add README
 [] Add code comments
 [] Test deployment
+[] Move audio lib to shared libs
