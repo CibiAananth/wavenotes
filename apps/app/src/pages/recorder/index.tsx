@@ -25,6 +25,12 @@ import { TEXT_MIME_TYPE, WAV_MIME_TYPE } from '@/lib/audio';
 import { recorderMachine, type RecorderEventType } from './recorder-machine';
 import { DeviceSelect } from './components/device-select';
 import LiveBadge from './components/live-badge';
+import {
+  TRANSCRIPT_EXTENSION,
+  TRANSCRIPT_PREFIX,
+  REC_EXTENSION,
+  REC_PREFIX,
+} from '@/lib/constant';
 
 const CACHE_CONTROL = '86400'; // 1 day
 
@@ -100,20 +106,28 @@ function RecorderView() {
     const now = Date.now();
     const audioUploadPromise = supabase.storage
       .from('recording')
-      .upload(`${user?.id}/rec-${now}.wav`, playbackBlob, {
-        upsert: true,
-        cacheControl: CACHE_CONTROL,
-        contentType: WAV_MIME_TYPE,
-      });
+      .upload(
+        `${user?.id}/${REC_PREFIX}${now}.${REC_EXTENSION}`,
+        playbackBlob,
+        {
+          upsert: true,
+          cacheControl: CACHE_CONTROL,
+          contentType: WAV_MIME_TYPE,
+        },
+      );
 
     const transcriptUploadPromise = transcriptBlob?.size
       ? supabase.storage
           .from('recording')
-          .upload(`${user?.id}/transc-${now}.txt`, transcriptBlob, {
-            upsert: true,
-            cacheControl: CACHE_CONTROL,
-            contentType: TEXT_MIME_TYPE,
-          })
+          .upload(
+            `${user?.id}/${TRANSCRIPT_PREFIX}${now}.${TRANSCRIPT_EXTENSION}`,
+            transcriptBlob,
+            {
+              upsert: true,
+              cacheControl: CACHE_CONTROL,
+              contentType: TEXT_MIME_TYPE,
+            },
+          )
       : Promise.resolve();
 
     const [{ error }] = await Promise.all([

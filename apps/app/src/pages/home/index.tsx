@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 import { RecordingTable } from './components/recording-table';
 import { TableSkeleton } from './components/table-skeleton';
+import { REC_PREFIX } from '@/lib/constant';
 
 const PAGE_LIMIT = 20;
 
@@ -23,7 +24,7 @@ async function fetchUserRecordings(userId: string | undefined) {
     .from('recording')
     .list(userId, {
       limit: PAGE_LIMIT,
-      search: 'rec',
+      search: REC_PREFIX,
       sortBy: {
         column: 'created_at',
         order: 'desc',

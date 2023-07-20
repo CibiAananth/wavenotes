@@ -1,5 +1,11 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import {
+  REC_PREFIX,
+  REC_EXTENSION,
+  TRANSCRIPT_PREFIX,
+  TRANSCRIPT_EXTENSION,
+} from './constant';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -24,4 +30,17 @@ export function bytesToReadableString(bytes: number) {
     i++;
   }
   return `${bytes.toFixed(2)} ${units[i]}`;
+}
+/**
+ *
+ * @param name recording file name to convert to a transcript file name
+ * @returns A string representing the transcript file name
+ * @example
+ * transcriptNameFromWav('rec-1326834.wav') // transc-1326834.txt
+ * transcriptNameFromWav('rec-9718634.wav') // transc-9718634.txt
+ * transcriptNameFromWav('rec-1324994.wav') // transc-1324994.txt
+ */
+export function transcriptNameFromWav(name: string) {
+  const regex = new RegExp(`${REC_PREFIX}(.*?)${REC_EXTENSION}`);
+  return name.replace(regex, `${TRANSCRIPT_PREFIX}$1${TRANSCRIPT_EXTENSION}`);
 }

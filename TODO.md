@@ -1,3 +1,5 @@
+# TODO
+
 [] Encrypt audio files before upload
 [x] Delete audio files
 [] Refresh table after delete
@@ -14,3 +16,5 @@
 [] Add code comments
 [] Test deployment
 [] Move audio lib to shared libs
+[] Add Speech recognition language
+[] Change hardcoding in server side to pick channels from frontend

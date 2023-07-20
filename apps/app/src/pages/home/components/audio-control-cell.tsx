@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
+import { transcriptNameFromWav } from '@/lib/utils';
 
 export const AudioControlCell = ({
   row,
@@ -88,7 +89,7 @@ export const AudioControlCell = ({
   }, [mediaState, rowId, setActiveRowPlayback]);
 
   const handleDownloadTranscript = useCallback(async () => {
-    const filename = `${row.original.name.split('.wav')[0]}.txt`;
+    const filename = transcriptNameFromWav(row.original.name);
     const { data } = await supabase.storage
       .from('recording')
       .download(`${user?.id}/${filename}`);
@@ -113,7 +114,7 @@ export const AudioControlCell = ({
     const { error } = await supabase.storage
       .from('recording')
       .remove([
-        `${user?.id}/${row.original.name.split('.wav')[0]}.txt`,
+        `${user?.id}/${transcriptNameFromWav(row.original.name)}`,
         `${user?.id}/${row.original.name}`,
       ]);
 
