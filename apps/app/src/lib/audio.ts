@@ -2,6 +2,7 @@ export const DEFAULT_SAMPLE_RATE = 16000; // in hertz
 export const DEFAULT_SAMPLE_SIZE = 16; // in bits per linear sample
 export const DEFAULT_MIME_TYPE = 'audio/webm;codecs=opus';
 export const WAV_MIME_TYPE = 'audio/wav';
+export const TEXT_MIME_TYPE = 'text/plain';
 export const WORKLET_NAME = 'audioProcessor';
 
 export const workletScript = `class AudioProcessor extends AudioWorkletProcessor {

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode, memo } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus as PlusIcon } from '@phosphor-icons/react';
 
@@ -8,54 +8,13 @@ import { useAuth } from '@/context/auth-provider';
 import emptySVG from '@/assets/empty.svg';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RecordingTable } from './recording-table';
 
-const TableSkeleton = memo(() => {
-  return (
-    <div className="flex items-center justify-center p-6">
-      <div className="w-full h-fit flex gap-12">
-        <div className="w-full h-fit flex flex-col gap-5">
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-        </div>
-        <div className="w-full h-fit flex flex-col gap-5">
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-        </div>
-        <div className="w-full h-fit flex flex-col gap-5">
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-          <Skeleton className="h-7 w-full" />
-        </div>
-      </div>
-    </div>
-  );
-});
+import { RecordingTable } from './components/recording-table';
+import { TableSkeleton } from './components/table-skeleton';
+
+const PAGE_LIMIT = 20;
 
 async function fetchUserRecordings(userId: string | undefined) {
-  // return new Promise((resolve, reject) => {
-  //   setTimeout(() => {
-  //     resolve(null);
-  //   }, 2000);
-  // });
-
   if (!userId) {
     return;
   }
@@ -63,7 +22,7 @@ async function fetchUserRecordings(userId: string | undefined) {
   const { data, error } = await supabase.storage
     .from('recording')
     .list(userId, {
-      limit: 20,
+      limit: PAGE_LIMIT,
       sortBy: {
         column: 'created_at',
         order: 'desc',
@@ -72,9 +31,17 @@ async function fetchUserRecordings(userId: string | undefined) {
   if (error) {
     throw error;
   }
-  console.log('data', data);
 
-  return data;
+  const allFilePaths = data?.map(item => `${userId}/${item.name}`);
+
+  const { data: signedURLdata } = await supabase.storage
+    .from('recording')
+    .createSignedUrls(allFilePaths, 60 * 30); // 30 minutes
+
+  return data.map((item, index) => ({
+    ...item,
+    signedURL: signedURLdata?.[index]?.signedUrl,
+  }));
 }
 
 type RequestStateType = {
@@ -116,7 +83,7 @@ export default function Home(): ReactNode {
   }, [user]);
 
   return (
-    <div className="border h-[550px] p-6 mt-4 rounded-md">
+    <div className="border min-h-[550px] h-full p-6 mt-4 rounded-md">
       {requestState.isFetching && (
         <div className="h-[200] w-full flex flex-col gap-3">
           <div className="flex justify-between items-center">
@@ -158,7 +125,7 @@ export default function Home(): ReactNode {
             <div className="mt-3">
               <RecordingTable data={recordings} />
               <p className="text-muted-foreground text-xs mt-5 font-light">
-                Showing only the latest 10 recordings available.
+                {`Showing only the latest ${PAGE_LIMIT} available recordings .`}
               </p>
             </div>
           </>

@@ -5,7 +5,6 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -27,7 +26,6 @@ export function DeviceSelect(): ReactNode {
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          <SelectLabel>Audio Inputs</SelectLabel>
           {devices.map(device => (
             <SelectItem key={device.deviceId} value={device.deviceId}>
               {device.label}

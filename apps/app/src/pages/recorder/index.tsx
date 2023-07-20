@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
-import { cva } from 'class-variance-authority';
 import { useNavigate } from 'react-router-dom';
 import { useMachine } from '@xstate/react';
 import {
@@ -8,28 +7,35 @@ import {
   Stop as StopIcon,
   ArrowLeft as ArrowLeftIcon,
   FloppyDisk as SaveIcon,
+  Circle as CircleIcon,
 } from '@phosphor-icons/react';
 
-import { useDeviceState } from '@/context/device-provider';
-import { useSpeechToText } from '@/hooks/useSpeechToText';
-import { cn } from '@/lib/utils';
-
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ToastAction } from '@/components/ui/toast';
 import { useToast } from '@/components/ui/use-toast';
-import { Toaster } from '@/components/ui/toaster';
 
-import { DeviceSelect } from './device-select';
-import { type RecorderEventType, recorderMachine } from './recorder-machine';
-import { supabase } from '@/lib/supabase';
-import { WAV_MIME_TYPE, writeWavHeaders } from '@/lib/audio';
+import { useDeviceState } from '@/context/device-provider';
 import { useAuth } from '@/context/auth-provider';
-import { CircleIcon } from '@radix-ui/react-icons';
+import { useSpeechToText } from '@/hooks/useSpeechToText';
+
+import { supabase } from '@/lib/supabase';
+import { TEXT_MIME_TYPE, WAV_MIME_TYPE } from '@/lib/audio';
+
+import { recorderMachine, type RecorderEventType } from './recorder-machine';
+import { DeviceSelect } from './components/device-select';
+import LiveBadge from './components/live-badge';
+
+const CACHE_CONTROL = '86400'; // 1 day
 
 type RecorderActionsType = {
   [K in RecorderEventType['type']]: () => void;
+};
+
+type FileUploadState = {
+  isUploading: boolean;
+  hasError: boolean;
+  message: string | null;
 };
 
 export default function _Root() {
@@ -37,69 +43,84 @@ export default function _Root() {
 
   return (
     <div className="mb-10 py-5">
-      <Toaster />
       <Button onClick={() => navigate('/')} variant="outline">
         <ArrowLeftIcon className="mr-2 h-4 w-4" /> Back to Dashboard
       </Button>
-      <Recording />
+      <RecorderView />
     </div>
   );
 }
 
-const liveBadgeVariants = cva('bg-primary', {
-  variants: {
-    variant: {
-      online: 'bg-green-500 shadow hover:bg-green-500/80',
-      offline: 'bg-destructive shadow hover:bg-destructive/80',
-    },
-  },
-  defaultVariants: {
-    variant: 'offline',
-  },
-});
-
-function Recording() {
+function RecorderView() {
   // Get the active device from the device context
   const { user } = useAuth();
+  const { toast } = useToast();
   const { activeDevice, hasActiveDevice } = useDeviceState();
   const speechToText = useSpeechToText({ deviceId: activeDevice });
-  const { toast } = useToast();
+
+  const audioElRef = useRef<HTMLAudioElement>(null);
+
+  const [fileUploadState, setFileUploadState] = useState<FileUploadState>({
+    isUploading: false,
+    hasError: false,
+    message: null,
+  });
 
   // Create a new instance of the state machine
   const [current, send] = useMachine(recorderMachine);
   const { value: recordingState } = current;
 
-  const [fileUploadState, setFileUploadState] = useState<{
-    isUploading: boolean;
-    hasError: boolean;
-    message: string | null;
-  }>({
-    isUploading: false,
-    hasError: false,
-    message: null,
-  });
-  const audioElRef = useRef<HTMLAudioElement>(null);
+  const isTranscribing = useMemo(() => {
+    return speechToText.liveStatus && recordingState === 'recording';
+  }, [recordingState, speechToText.liveStatus]);
+
+  const selectedDevice = useMemo(() => {
+    if (!activeDevice?.length) return undefined;
+    return hasActiveDevice(activeDevice) ? activeDevice : undefined;
+  }, [activeDevice, hasActiveDevice]);
 
   const uploadFile = async () => {
+    const playbackBlob = speechToText.getPlaybackBlob();
+    const transcriptBlob = speechToText.getTranscriptBlob();
+
+    console.log(playbackBlob, transcriptBlob);
+
+    if (!playbackBlob?.size) {
+      throw new Error(
+        'Recording or transcript is corrupted. Unable to fetch blobs',
+      );
+    }
+
     setFileUploadState({
       isUploading: true,
       hasError: false,
       message: null,
     });
 
-    const wavBuffer = writeWavHeaders(
-      speechToText.recordingInPCM as Int16Array,
-      speechToText.channelCount,
-    );
+    const filename = `${user?.id}/${Date.now()}`;
 
-    const blob = new Blob([wavBuffer], { type: WAV_MIME_TYPE });
-
-    const { error } = await supabase.storage
+    const audioUploadPromise = supabase.storage
       .from('recording')
-      .upload(`${user?.id}/${Date.now()}.wav`, blob, {
-        cacheControl: '86400', // 1 day
+      .upload(`${filename}.wav`, playbackBlob, {
+        upsert: true,
+        cacheControl: CACHE_CONTROL,
         contentType: WAV_MIME_TYPE,
       });
+
+    const transcriptUploadPromise = transcriptBlob?.size
+      ? supabase.storage
+          .from('recording')
+          .upload(`${filename}.txt`, transcriptBlob, {
+            upsert: true,
+            cacheControl: CACHE_CONTROL,
+            contentType: TEXT_MIME_TYPE,
+          })
+      : Promise.resolve();
+
+    const [{ error }] = await Promise.all([
+      audioUploadPromise,
+      transcriptUploadPromise,
+    ]);
 
     if (error) {
       console.log(error);
@@ -129,18 +150,18 @@ function Recording() {
   };
 
   const recorderActions: RecorderActionsType = {
-    RECORD: async () => {
+    RECORD: () => {
       speechToText.start();
     },
-    STOP: async () => {
+    STOP: () => {
       speechToText.stop();
     },
-    START: async () => {
+    START: () => {
       speechToText.destroy();
       speechToText.start();
     },
     SAVE: async () => {
-      uploadFile();
+      await uploadFile();
     },
   };
 
@@ -149,25 +170,6 @@ function Recording() {
     recorderActions[action]?.();
   };
 
-  const isTranscribing = useMemo(() => {
-    return speechToText.liveStatus && recordingState === 'recording';
-  }, [recordingState, speechToText.liveStatus]);
-
-  const selectedDevice = useMemo(() => {
-    if (!activeDevice?.length) return undefined;
-    return hasActiveDevice(activeDevice) ? activeDevice : undefined;
-  }, [activeDevice, hasActiveDevice]);
-
-  useEffect(() => {
-    const canvasRef = speechToText.visualizerCanvasRef?.current;
-    if (!canvasRef) return;
-
-    const parentRect = canvasRef?.parentElement?.getBoundingClientRect();
-
-    canvasRef.width = parentRect?.width || 300;
-    canvasRef.height = parentRect?.height || 300;
-  }, [speechToText.visualizerCanvasRef]);
-
   return (
     <div className="w-full h-[500px] flex justify-center">
       <div className="w-full mt-5 rounded-md border p-2">
@@ -175,21 +177,12 @@ function Recording() {
           <div className="w-4/12">
             <DeviceSelect />
           </div>
-          <Badge
-            className={cn(
-              liveBadgeVariants({
-                variant: isTranscribing ? 'online' : 'offline',
-              }),
-              isTranscribing ? 'animate-pulse' : '',
-            )}
-          >
-            {isTranscribing ? 'Transcribing' : 'Speech to Text: Inactive'}
-          </Badge>
+          <LiveBadge isLive={isTranscribing} />
         </div>
 
         {selectedDevice ? (
           <>
-            <div className="flex justify-center items-center h-[300px]">
+            <div className="flex w-full justify-center items-center h-[200px]">
               {speechToText.playBackURL ? (
                 <audio
                   ref={audioElRef}
@@ -197,9 +190,12 @@ function Recording() {
                   controls
                 />
               ) : (
-                <div className="w-2/4">
-                  <canvas ref={speechToText.visualizerCanvasRef} id="canvas" />
-                </div>
+                <canvas
+                  width={500}
+                  height={200}
+                  ref={speechToText.visualizerCanvasRef}
+                  id="canvas"
+                />
               )}
             </div>
             <div className="flex justify-center items-center">
@@ -245,19 +241,23 @@ function Recording() {
           </p>
         )}
 
-        <div className="mt-5 flex justify-center items-center">
-          {isTranscribing &&
-            (speechToText.transcript ? (
-              <p className="w-1/2 text-sm text-center line-clamp-3">
-                {speechToText.transcript}
-              </p>
-            ) : (
-              <div className="w-1/2 flex flex-col items-center justify-center gap-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
-              </div>
-            ))}
+        <div className="mt-5 flex justify-center">
+          {isTranscribing && !speechToText.transcript && (
+            <div className="w-1/2">
+              <Skeleton className="h-4 mt-2 w-full" />
+              <Skeleton className="h-4 mt-2 w-full" />
+              <Skeleton className="h-4 mt-2 w-full" />
+              <Skeleton className="h-4 mt-2 w-full" />
+              <Skeleton className="h-4 mt-2 w-full" />
+              <Skeleton className="h-4 mt-2 w-full" />
+              <Skeleton className="h-4 mt-2 w-full" />
+            </div>
+          )}
+          {speechToText.transcript && (
+            <p className="w-1/2 text-sm text-left line-clamp-3 bg-muted">
+              {speechToText.transcript}
+            </p>
+          )}
         </div>
       </div>
     </div>

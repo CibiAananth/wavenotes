@@ -11,6 +11,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card';
+import { Toaster } from '@/components/ui/toaster';
 
 import { useAuth } from '@/context/auth-provider';
 
@@ -19,6 +20,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="p-5 h-screen">
+      <Toaster />
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-semibold">Bienvenue!</h2>
         <ThemeToggle />

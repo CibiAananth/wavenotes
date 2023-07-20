@@ -18,7 +18,10 @@ export function useVisualizer() {
     const sliceWidth = (width * 1.0) / audioData.length;
 
     context.lineWidth = 2;
-    context.strokeStyle = '#000000';
+    const hslValue = getComputedStyle(document.body)
+      .getPropertyValue('--foreground')
+      .trim();
+    context.strokeStyle = `hsl(${hslValue})`;
 
     context.beginPath();
     context.moveTo(0, height / 2);

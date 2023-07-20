@@ -5,21 +5,36 @@ import {
   useRef,
   useCallback,
 } from 'react';
-import { Pause, Play } from '@phosphor-icons/react';
+import { FileArrowDown, Pause, Play } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/auth-provider';
+import { useToast } from '@/components/ui/use-toast';
 
-const url =
-  'https://wujqkfxwjcdlaqwzqttd.supabase.co/storage/v1/object/sign/recording/7b6a9c24-00b8-466f-a99e-7ca86ec8888d/1689789128340.wav?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJyZWNvcmRpbmcvN2I2YTljMjQtMDBiOC00NjZmLWE5OWUtN2NhODZlYzg4ODhkLzE2ODk3ODkxMjgzNDAud2F2IiwiaWF0IjoxNjg5ODAzNTQ5LCJleHAiOjE2OTA0MDgzNDl9.lYplTk2ZCYRoRJD1YINE4wcJD65xIjEVf_PxiRn4-dY&t=2023-07-19T21%3A52%3A29.681Z';
+export const AudioControlCell = ({
+  row,
+  table,
+}: {
+  row: any;
+  table: any;
+}): ReactNode => {
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-export const AudioControlCell = (value: any): ReactNode => {
-  const rowId = value.row.id;
+  const rowId = row.id;
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
   const [mediaState, setMediaState] = useState<'playing' | 'paused' | 'idle'>(
     'paused',
   );
-  const { activeRowPlayback, setActiveRowPlayback } = value.table.options.meta;
+  const { activeRowPlayback, setActiveRowPlayback } = table.options.meta;
 
   useEffect(() => {
     if (activeRowPlayback !== rowId) {
@@ -34,7 +49,7 @@ export const AudioControlCell = (value: any): ReactNode => {
     if (mediaState === 'playing') {
       if (!audioElementRef.current) {
         audioElementRef.current = document.createElement('audio');
-        audioElementRef.current.src = url;
+        audioElementRef.current.src = row.original.signedURL;
       }
       audioElementRef.current?.play();
     }
@@ -53,15 +68,57 @@ export const AudioControlCell = (value: any): ReactNode => {
     }
   }, [mediaState, rowId, setActiveRowPlayback]);
 
+  const handleTranscriptDownload = useCallback(async () => {
+    const { data } = await supabase.storage
+      .from('recording')
+      .download(`${user?.id}/${row.original.name.split('.wav')[0]}.txt`);
+
+    if (!data) {
+      toast({
+        variant: 'destructive',
+        description: 'No transcript found for this recording.',
+      });
+      return;
+    }
+
+    const url = URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${row.original.name.split('.wav')[0]}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [row.original.name, user]);
+
   return (
     <div className="flex items-center justify-center">
-      <Button
-        variant="outline"
-        className="mr-2"
-        onClick={handleMediaStateChange}
-      >
-        {mediaState === 'playing' ? <Pause /> : <Play />}
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              className="mr-2"
+              onClick={handleMediaStateChange}
+            >
+              {mediaState === 'playing' ? <Pause /> : <Play />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{`${mediaState === 'playing' ? 'Pause' : 'Play'} Audio`}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button onClick={handleTranscriptDownload} variant="outline">
+              <FileArrowDown />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Download Transcript</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 };

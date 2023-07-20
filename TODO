@@ -1,9 +1,14 @@
-1. Encrypt audio files before upload
-2. Delete audio files
-3. Play/Pause while recording
-4. Subtitle-like transcription
-5. socket authentication
-6. Recordings page with details
-7. Play in recording table
-8. View entire transcription in table
-9. Cache the network calls
+[] Encrypt audio files before upload
+[] Delete audio files
+[] Play/Pause while recording
+[x] CC transcription
+[x] socket authentication
+[] Recordings page with details
+[x] Play in recording table
+[x] Download transcription in table
+[x] Fix visualiser stroke color
+[] Cache the network calls
+[] Based on the caching above get audio signed url only on play
+[] Add README
+[] Add code comments
+[] Test deployment

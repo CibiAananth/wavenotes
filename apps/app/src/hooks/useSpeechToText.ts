@@ -10,6 +10,7 @@ import {
   workletScriptURL,
   WORKLET_NAME,
   writeWavHeaders,
+  TEXT_MIME_TYPE,
 } from '@/lib/audio';
 import { useAudio } from './useAudio';
 import { useSocket } from './useSocket';
@@ -22,6 +23,10 @@ const chunkInterval = 100;
 const OPTIONS_ANALYSER = {
   smoothingTime: 0.6,
   fftSize: 512,
+};
+
+export type Transcript = {
+  text: string;
 };
 
 export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
@@ -40,14 +45,15 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
   const chunksInPCMRef = useRef<Int16Array | null>(null);
   const bufferIntervalId = useRef<number | null>(null);
   const payloadUUID = useRef<string | null>(null);
+  const finalTranscript = useRef<Transcript[]>([]);
 
   const [channelCount, setChannelCount] = useState<number>(1);
   const [liveStatus, setLiveStatus] = useState<boolean>(false);
   const [recordingInPCM, setRecordingInPCM] = useState<Int16Array | null>(null);
   const [chunksInPCM, setChunksInPCM] = useState<Int16Array | null>(null);
   const [startInterval, setStartInterval] = useState<boolean>(false);
-  const [transcript, setTranscript] = useState<string | null>(null);
-  const [playBackURL, setPlayBackURL] = useState<string>('');
+  const [transcript, setTranscript] = useState<string | null>('');
+  const [playBackURL, setPlaybackURL] = useState<string>('');
 
   useEffect(() => {
     socket.instance?.on('connect', () => {
@@ -58,29 +64,27 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       setLiveStatus(false);
     });
 
-    let finalTranscript = '';
     socket.instance?.on('speech.chunks.pcm.transcript', ({ data }) => {
-      let interimTranscript = ''; // This will hold only the latest interim result
+      let interimTranscript = ''; // Clear the interim transcript at the start of each event
       data?.results?.forEach((result: any) => {
         const text = result?.alternatives[0]?.transcript || '';
         if (result.isFinal) {
-          finalTranscript += text + ' ';
+          finalTranscript.current?.push({ text });
         } else {
           interimTranscript = text; // Assign the latest text to the interim transcript
         }
       });
 
-      setTranscript(finalTranscript + interimTranscript);
-    });
-
-    socket.instance?.on('welcome', (data: string) => {
-      console.log('welcome', data);
+      // Construct transcript to show in the UI
+      const uiTranscript =
+        finalTranscript.current?.map(t => t.text).join(' ') + interimTranscript;
+      setTranscript(uiTranscript);
     });
 
     return () => {
       socket.instance?.off('connect');
       socket.instance?.off('disconnect');
-      socket.instance?.off('transcript');
+      socket.instance?.off('speech.chunks.pcm.transcript');
     };
   }, [socket.instance]);
 
@@ -90,7 +94,6 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       bufferIntervalId.current = window.setInterval(() => {
         if (chunksInPCMRef.current?.length) {
           const pcmChunk = Buffer.from(chunksInPCMRef.current.buffer);
-          console.log('asdasds');
           socket.instance?.emit('speech.chunks.pcm.recognize', {
             id: payloadUUID.current,
             pcmChunk,
@@ -140,6 +143,8 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
 
   const start = useCallback(async () => {
     try {
+      setTranscript(null);
+      finalTranscript.current = [];
       let socketInstance = socket.instance;
       if (!socketInstance?.active) socketInstance = socket.init();
 
@@ -177,9 +182,13 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
 
   const stop = useCallback(async () => {
     try {
-      setPlayBackURL(getPlayBackURL() as string);
-
       await audio.stopStream();
+      const playbackBlob = getPlaybackBlob();
+      if (playbackBlob?.size) {
+        setPlaybackURL(URL.createObjectURL(playbackBlob));
+      }
+      visualizer.setAudioData(new Uint8Array(0));
+
       socket.instance?.emit('speech.chunks.pcm.session.stop', {
         id: payloadUUID.current,
       });
@@ -190,15 +199,13 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
         window.clearInterval(bufferIntervalId.current);
         bufferIntervalId.current = null;
       }
-
-      visualizer.setAudioData(new Uint8Array(0));
     } catch (error) {
       console.log(error);
       throw error;
     }
   }, [audio, visualizer]);
 
-  const getPlayBackURL = () => {
+  const getPlaybackBlob = () => {
     if (recordingInPCM?.length === 0) {
       return null;
     }
@@ -206,18 +213,27 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       recordingInPCM as Int16Array,
       channelCount,
     );
-    const blobUrl = URL.createObjectURL(
-      new Blob([wavBuffer], { type: WAV_MIME_TYPE }),
-    );
+    return new Blob([wavBuffer], { type: WAV_MIME_TYPE });
+  };
 
-    return blobUrl;
+  const getTranscriptBlob = () => {
+    if (!finalTranscript.current?.length) {
+      return null;
+    }
+    const fileTranscript = finalTranscript.current
+      .map(t => `${t.text}`)
+      .join('\n');
+
+    return new Blob([fileTranscript], { type: TEXT_MIME_TYPE });
   };
 
   const play = useCallback(async () => {
-    if (!audio.audioElRef.current || !getPlayBackURL()?.length) {
+    const playbackBlob = getPlaybackBlob();
+    if (!audio.audioElRef.current || !playbackBlob?.size) {
       return;
     }
-    audio.audioElRef.current.src = getPlayBackURL() as string;
+
+    audio.audioElRef.current.src = URL.createObjectURL(playbackBlob);
     audio.audioElRef.current?.play();
   }, [audio.audioElRef]);
 
@@ -226,7 +242,7 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
     setStartInterval(false);
     setRecordingInPCM(null);
     setChunksInPCM(null);
-    setPlayBackURL('');
+    setPlaybackURL('');
     setTranscript(null);
 
     if (bufferIntervalId.current) {
@@ -251,8 +267,9 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
     transcript,
     visualizerCanvasRef: visualizer.canvasRef,
     destroy,
-    setPlayBackURL,
-    getPlayBackURL,
+    setPlaybackURL,
+    getPlaybackBlob,
+    getTranscriptBlob,
     play,
     start,
     stop,

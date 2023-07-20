@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ColumnDef,
+  TableOptions,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
@@ -15,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { AudioControlCell } from './components/audio-control-cell';
+import { AudioControlCell } from './audio-control-cell';
 
 import { bytesToReadableString } from '@/lib/utils';
 
@@ -35,31 +36,13 @@ export type FileType = {
   updated_at: string;
   created_at: string;
   last_accessed_at: string;
+  signedURL: string;
   metadata: MetadataType;
 };
 
 export type Recording = FileType & {
   metadata: MetadataType;
 };
-
-export const recordings: Recording[] = [
-  {
-    name: '1689788760814.wav',
-    id: '242876e7-7ab7-4451-92af-84083eaeb4e7',
-    updated_at: '2023-07-19T17:46:03.091457+00:00',
-    created_at: '2023-07-19T17:46:02.5421+00:00',
-    last_accessed_at: '2023-07-19T17:46:02.5421+00:00',
-    metadata: {
-      eTag: '"65123979fd4edc36b50d373d7b17a575"',
-      size: 410668,
-      mimetype: 'audio/wav',
-      cacheControl: 'max-age=86400',
-      lastModified: '2023-07-19T17:46:03.000Z',
-      contentLength: 410668,
-      httpStatusCode: 200,
-    },
-  },
-];
 
 const columns: ColumnDef<Recording>[] = [
   {
@@ -94,7 +77,7 @@ export function RecordingTable({ data }: { data: Recording[] }) {
     string | number | null
   >(null);
 
-  const table = useReactTable({
+  const tableOptions: TableOptions<Recording> = {
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
@@ -103,7 +86,9 @@ export function RecordingTable({ data }: { data: Recording[] }) {
       activeRowPlayback,
       setActiveRowPlayback,
     },
-  });
+  };
+
+  const table = useReactTable<Recording>(tableOptions);
 
   return (
     <div className="h-full rounded-md border">

@@ -161,7 +161,7 @@ export function useAudio({
     mediaRecorder?.stop();
     setMediaRecorder(null);
 
-    audioStream?.getTracks().forEach(track => track.stop());
+    audioStream?.getTracks()?.forEach(track => track.stop());
     setAudioStream(null);
 
     await audioContext?.close();
