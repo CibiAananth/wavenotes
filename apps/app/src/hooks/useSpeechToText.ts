@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Buffer } from 'buffer';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
   combinePCMChunks,
@@ -31,13 +32,14 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       sampleSize: SAMPLE_SIZE,
     },
   });
-  const socket = useSocket('http://localhost:3333', {
-    path: '/custom/',
+  const socket = useSocket(import.meta.env.VITE_NODE_SERVER_URL, {
+    path: import.meta.env.VITE_SOCKET_ENDPOINT,
   });
   const visualizer = useVisualizer();
 
   const chunksInPCMRef = useRef<Int16Array | null>(null);
   const bufferIntervalId = useRef<number | null>(null);
+  const payloadUUID = useRef<string | null>(null);
 
   const [channelCount, setChannelCount] = useState<number>(1);
   const [liveStatus, setLiveStatus] = useState<boolean>(false);
@@ -56,9 +58,23 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       setLiveStatus(false);
     });
 
-    socket.instance?.on('transcript', (data: string) => {
-      console.log('transcript', data);
-      setTranscript(data);
+    let finalTranscript = '';
+    socket.instance?.on('speech.chunks.pcm.transcript', ({ data }) => {
+      let interimTranscript = ''; // This will hold only the latest interim result
+      data?.results?.forEach((result: any) => {
+        const text = result?.alternatives[0]?.transcript || '';
+        if (result.isFinal) {
+          finalTranscript += text + ' ';
+        } else {
+          interimTranscript = text; // Assign the latest text to the interim transcript
+        }
+      });
+
+      setTranscript(finalTranscript + interimTranscript);
+    });
+
+    socket.instance?.on('welcome', (data: string) => {
+      console.log('welcome', data);
     });
 
     return () => {
@@ -74,7 +90,11 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       bufferIntervalId.current = window.setInterval(() => {
         if (chunksInPCMRef.current?.length) {
           const pcmChunk = Buffer.from(chunksInPCMRef.current.buffer);
-          socket.instance?.emit('pcmChunk', pcmChunk); // Sending the audio chunk
+          console.log('asdasds');
+          socket.instance?.emit('speech.chunks.pcm.recognize', {
+            id: payloadUUID.current,
+            pcmChunk,
+          }); // Sending the audio chunk
           setChunksInPCM(null); // Reset the chunk for the next interval
         }
       }, chunkInterval);
@@ -120,9 +140,14 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
 
   const start = useCallback(async () => {
     try {
-      if (!socket.instance?.active) {
-        socket.init();
-      }
+      let socketInstance = socket.instance;
+      if (!socketInstance?.active) socketInstance = socket.init();
+
+      payloadUUID.current = uuidv4();
+      socketInstance?.emit('speech.chunks.pcm.session.start', {
+        id: payloadUUID.current,
+      });
+
       const stream = await audio.startStream();
       const { ctx, source } = await audio.createAudioContext(stream);
 
@@ -132,7 +157,6 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
         workletScriptURL,
         workletProcessor,
       );
-      setChannelCount(worklet.channelCount);
 
       const analyser = await audio.createAnalyser(
         ctx,
@@ -143,6 +167,8 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       source.connect(analyser);
       analyser.connect(worklet);
       worklet.connect(ctx.destination);
+
+      setChannelCount(worklet.channelCount);
     } catch (error) {
       console.log(error);
       throw error;
@@ -154,8 +180,12 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       setPlayBackURL(getPlayBackURL() as string);
 
       await audio.stopStream();
-      setStartInterval(false);
+      socket.instance?.emit('speech.chunks.pcm.session.stop', {
+        id: payloadUUID.current,
+      });
+      payloadUUID.current = null;
 
+      setStartInterval(false);
       if (bufferIntervalId.current) {
         window.clearInterval(bufferIntervalId.current);
         bufferIntervalId.current = null;

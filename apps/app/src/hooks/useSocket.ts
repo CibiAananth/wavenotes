@@ -1,5 +1,10 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { io, Socket, SocketOptions, ManagerOptions } from 'socket.io-client';
+import {
+  io,
+  type Socket,
+  type SocketOptions,
+  type ManagerOptions,
+} from 'socket.io-client';
 
 export function useSocket(
   url: string,
@@ -8,8 +13,12 @@ export function useSocket(
   const socket = useRef<Socket | null>(null);
 
   const init = useCallback(() => {
-    console.log('initing', url, options);
-    socket.current = io(url, options);
+    socket.current = io(url, {
+      ...options,
+      query: {
+        token: import.meta.env.VITE_SOCKET_SECRET,
+      },
+    });
     socket.current?.on('connect', () => {
       console.log('connected');
     });
@@ -17,6 +26,8 @@ export function useSocket(
     socket.current?.on('disconnect', () => {
       console.log('disconnected');
     });
+
+    return socket.current;
   }, [url, options]);
 
   const disconnect = () => {

@@ -1,5 +1,4 @@
-export const SAMPLE_RATE = 16000; // in hertz
-export const SAMPLE_SIZE = 16; // in bits per linear sample
+import { SAMPLE_RATE, SAMPLE_SIZE } from './config';
 
 export function writeWavHeader(
   sampleRate = SAMPLE_RATE,

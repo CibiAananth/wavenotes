@@ -1,105 +1,50 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-import fs from 'fs';
-import path from 'path';
+'use strict';
+
 import express from 'express';
 import http from 'http';
-import { SAMPLE_RATE, SAMPLE_SIZE, writeWavHeader } from './util';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
+import winston from 'winston';
+
+import * as config from './config';
+import apiRoutes from './routes/api';
+import intiSocketServer from './socket-server';
 
 const app = express();
-const server = http.createServer(app);
 
-const socketio = require('socket.io');
-const io = socketio(server, {
-  path: '/custom/',
-  cors: {
-    origin: '*',
-  },
+winston.configure({
+  transports: [new winston.transports.Console()],
 });
 
-// Imports the Google Cloud client library
-// const speech = require('@google-cloud/speech');
-const speech = require('@google-cloud/speech').v1;
-// Creates a client
-const client = new speech.SpeechClient();
+/**
+ * Configure middleware
+ */
+app.use(
+  cors({
+    // origin: `http://localhost:${config.SERVER_PORT}`,
+    origin: function (origin, callback) {
+      return callback(null, true);
+    },
+    optionsSuccessStatus: 200,
+    credentials: true,
+  }),
+  cookieParser(),
+  bodyParser.json(),
+);
 
-const config = {
-  encoding: 'LINEAR16',
-  sampleRateHertz: SAMPLE_RATE,
-  languageCode: 'en-US',
-  enableWordTimeOffsets: true,
-  model: 'medical_dictation',
-  audioChannelCount: 2,
-  enableSeparateRecognitionPerChannel: true,
-};
+/**
+ * Include all API Routes
+ */
+app.use('/api', apiRoutes);
 
-const filePath = path.join(__dirname, 'audio.wav');
-
-io.on('connection', socket => {
-  const recognizeStream = client
-    .streamingRecognize({
-      config,
-      interimResults: true,
-    })
-    .on('error', console.error)
-    .on('data', data => {
-      console.log('data', data.results[0]?.alternatives[0]);
-      io.emit('transcript', data.results[0]?.alternatives[0].transcript);
-    });
-
-  console.log('New client connected');
-
-  /**
-   * Using buffer and allocating memory
-   */
-  let pcmBuffer = Buffer.alloc(0);
-  socket.on('pcmChunk', (data: Buffer) => {
-    recognizeStream.write(data);
-    pcmBuffer = Buffer.concat([pcmBuffer, data]);
-  });
-
-  socket.on('disconnect', async () => {
-    console.log('Client disconnected');
-    try {
-      console.log('Client disconnected');
-      const wavHeader = writeWavHeader(
-        SAMPLE_RATE,
-        2,
-        SAMPLE_SIZE,
-        pcmBuffer.length / 2,
-      );
-      const wavData = Buffer.concat([wavHeader, pcmBuffer]);
-      fs.writeFileSync(filePath, wavData);
-      console.log('filePath', filePath);
-      pcmBuffer = Buffer.alloc(0);
-
-      const audio = {
-        content: fs.readFileSync(filePath).toString('base64'),
-      };
-
-      const request = {
-        config: config,
-        audio: audio,
-      };
-      const [response] = await client.recognize(request);
-      response.results.forEach(result => {
-        const alternative = result.alternatives[0];
-        console.log('result', alternative?.transcript);
-      });
-    } catch (e) {
-      console.log(e);
-    } finally {
-      recognizeStream.destroy();
-      recognizeStream.removeAllListeners();
-    }
-  });
+// Create a HTTP server
+const httpServer = http.createServer({}, app);
+httpServer.listen(config.SERVER_PORT, () => {
+  winston.info(`listening on port ${config.SERVER_PORT}`);
 });
 
-app.get('/api', (_req, res) => {
-  res.send({ message: 'Welcome to web!' });
-});
-
-server.listen(3333, () => {
-  console.log('Listening at http://localhost:3333/api');
-});
-
-server.on('error', console.error);
+/**
+ * Socket.io section
+ */
+intiSocketServer(httpServer);
