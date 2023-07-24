@@ -25,9 +25,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <h2 className="text-3xl font-semibold">Bienvenue!</h2>
         <ThemeToggle />
       </div>
-      <h3 className="text-md mt-2">
-        Create recordings and get transcriptions in real-time
-      </h3>
+      <h3 className="text-md mt-2">Speech to text in real-time.</h3>
 
       <div className="mt-4">
         {!user &&

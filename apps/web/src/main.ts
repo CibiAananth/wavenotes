@@ -1,5 +1,8 @@
 'use strict';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require('dotenv').config({ debug: true });
+
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
