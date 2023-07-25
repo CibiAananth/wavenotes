@@ -22,7 +22,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className="p-5 h-screen">
       <Toaster />
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-semibold">Bienvenue!</h2>
+        <h2 className="text-3xl font-semibold">Hello!</h2>
         <ThemeToggle />
       </div>
       <h3 className="text-md mt-2">Speech to text in real-time.</h3>

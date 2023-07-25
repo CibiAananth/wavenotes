@@ -1,5 +1,7 @@
 # TODO
 
+[] Welcome in different languages
+
 [] Encrypt audio files before upload
 [x] Delete audio files
 [] Refresh table after delete
@@ -18,3 +20,4 @@
 [] Move audio lib to shared libs
 [] Add Speech recognition language
 [] Change hardcoding in server side to pick channels from frontend
+[] Language dropdown to pick transcription language and pass to backend

@@ -45,10 +45,14 @@ export function DeviceProvider({
   }
 
   useEffect(() => {
-    navigator.mediaDevices.enumerateDevices().then(devices => {
-      const audioInput = devices.filter(device => device.kind === kind);
-      setDevices(audioInput);
-    });
+    (async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); // assuming the permission would be granted. TODO - If not, need to handle the error and watch for the permission change
+      stream.getTracks().forEach(track => track.stop());
+      navigator.mediaDevices.enumerateDevices().then(devices => {
+        const audioInput = devices.filter(device => device.kind === kind);
+        setDevices(audioInput);
+      });
+    })();
   }, [kind, setDevices]);
 
   return (
