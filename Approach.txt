@@ -1,0 +1,26 @@
+Current approach
+
+1. Get user media to get microphone access
+2. Show the available devices - enumerateDevices
+3. Select the device
+4. Create a stream with the selected device - getUserMedia
+5. Create a AudioContext and connect the stream to it
+6. Create a WorkletNode to get the PCM data
+7. Create an analyser node to get the frequency data
+8. Use the frequency data to draw the visualisation
+9. Emit the PCM chunks to get transcription using setInterval
+10. On end of the stream, convert PCM to WAV and use it for src and upload to server
+
+
+Alternative approach
+1. Get user media to get microphone access
+2. Show the available devices - enumerateDevices
+3. Select the device
+4. Create a stream with the selected device - getUserMedia
+5. Create a MediaRecorder API and use ogg;codecs=opus as mimeType at 100ms interval
+6. Create a AudioContext and connect the stream to it
+6. Create a WorkletNode to get the PCM data
+7. Create an analyser node to get the frequency data
+8. Use the frequency data to draw the visualisation
+9. Emit the PCM chunks as and when MediaRecorder API emits data
+10. On end of the stream, convert WAV and use it for src and upload to server
