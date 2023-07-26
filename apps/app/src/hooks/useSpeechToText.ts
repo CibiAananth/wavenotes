@@ -13,6 +13,8 @@ import {
   workletScriptURL,
   writeWavHeaders,
 } from '@/lib/audio';
+import { SupportedLanguage } from '@/lib/constant';
+
 import { useAudio } from './useAudio';
 import { useSocket } from './useSocket';
 import { useVisualizer } from './useVisualizer';
@@ -28,7 +30,15 @@ export type Transcript = {
   text: string;
 };
 
-export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
+type UseSpeechToTextOptions = {
+  deviceId: string | null;
+  language: SupportedLanguage;
+};
+
+export function useSpeechToText({
+  deviceId,
+  language,
+}: UseSpeechToTextOptions) {
   const audio = useAudio({
     deviceId,
     constraints: {
@@ -175,12 +185,13 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
         id: payloadUUID.current,
         channelCount: worklet.channelCount,
         sampleRate: DEFAULT_SAMPLE_RATE,
+        language,
       });
     } catch (error) {
       console.log(error);
       throw error;
     }
-  }, [socket, audio, workletProcessor, visualizer]);
+  }, [socket, audio, workletProcessor, visualizer, language]);
 
   const stop = useCallback(async () => {
     try {

@@ -1,13 +1,12 @@
 import { DEFAULT_MIME_TYPE } from '@/lib/audio';
 import { useRef, useState } from 'react';
 
-export function useAudio({
-  deviceId,
-  constraints = {},
-}: {
+type UseAudioOptions = {
   deviceId: string | null;
   constraints?: MediaTrackConstraints;
-}) {
+};
+
+export function useAudio({ deviceId, constraints = {} }: UseAudioOptions) {
   const audioElRef = useRef<HTMLAudioElement>(null);
   const rafId = useRef<number | null>(null);
 

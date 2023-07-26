@@ -16,8 +16,7 @@
 [] Based on the caching above get audio signed url only on play
 [] Add README
 [] Add code comments
-[] Test deployment
+[x] Test deployment
 [] Move audio lib to shared libs
-[] Add Speech recognition language
-[] Change hardcoding in server side to pick channels from frontend
+[x] Change hardcoding in server side to pick channels from frontend
 [] Language dropdown to pick transcription language and pass to backend

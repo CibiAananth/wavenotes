@@ -24,12 +24,15 @@ import { TEXT_MIME_TYPE, WAV_MIME_TYPE } from '@/lib/audio';
 
 import { recorderMachine, type RecorderEventType } from './recorder-machine';
 import { DeviceSelect } from './components/device-select';
+import { LanguageSelect } from './components/language-select';
 import LiveBadge from './components/live-badge';
+
 import {
   TRANSCRIPT_EXTENSION,
   TRANSCRIPT_PREFIX,
   REC_EXTENSION,
   REC_PREFIX,
+  SupportedLanguage,
 } from '@/lib/constant';
 
 const CACHE_CONTROL = '86400'; // 1 day
@@ -58,19 +61,23 @@ export default function _Root() {
 }
 
 function RecorderView() {
-  // Get the active device from the device context
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const { activeDevice, hasActiveDevice } = useDeviceState();
-  const speechToText = useSpeechToText({ deviceId: activeDevice });
-
-  const audioElRef = useRef<HTMLAudioElement>(null);
-
   const [fileUploadState, setFileUploadState] = useState<FileUploadState>({
     isUploading: false,
     hasError: false,
     message: null,
   });
+  const [language, setLanguage] = useState<SupportedLanguage>('en-US');
+
+  // Get the active device from the device context
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { activeDevice, hasActiveDevice } = useDeviceState();
+  const speechToText = useSpeechToText({
+    deviceId: activeDevice,
+    language,
+  });
+
+  const audioElRef = useRef<HTMLAudioElement>(null);
 
   // Create a new instance of the state machine
   const [current, send] = useMachine(recorderMachine);
@@ -180,13 +187,21 @@ function RecorderView() {
   };
 
   return (
-    <div className="w-full h-[500px] flex justify-center">
+    <div className="w-full h-[550px] flex justify-center">
       <div className="w-full mt-5 rounded-md border p-2">
         <div className="flex items-start justify-between">
           <div className="w-4/12">
-            <DeviceSelect />
+            <DeviceSelect disabled={isTranscribing} />
+            <div className="mt-2" />
+            <LiveBadge isLive={isTranscribing} />
           </div>
-          <LiveBadge isLive={isTranscribing} />
+          <div className="w-2/12 [&>*:nth-child(2)]:w-1/2">
+            <LanguageSelect
+              disabled={isTranscribing}
+              language={language}
+              setLanguage={setLanguage}
+            />
+          </div>
         </div>
 
         {selectedDevice ? (
