@@ -1,4 +1,6 @@
 import { MoonIcon, SunIcon } from '@radix-ui/react-icons';
+
+import { useTheme } from '@/context/theme-provider';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -6,7 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useTheme } from '@/context/theme-provider';
 
 export default function ModeToggle() {
   const { theme, toggleTheme } = useTheme();

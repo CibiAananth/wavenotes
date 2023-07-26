@@ -1,39 +1,35 @@
 import { useMemo, useRef, useState } from 'react';
-
 import { useNavigate } from 'react-router-dom';
-import { useMachine } from '@xstate/react';
 import {
-  Microphone as MicIcon,
-  Stop as StopIcon,
   ArrowLeft as ArrowLeftIcon,
-  FloppyDisk as SaveIcon,
   Circle as CircleIcon,
+  Microphone as MicIcon,
+  FloppyDisk as SaveIcon,
+  Stop as StopIcon,
 } from '@phosphor-icons/react';
+import { useMachine } from '@xstate/react';
 
+import { useAuth } from '@/context/auth-provider';
+import { useDeviceState } from '@/context/device-provider';
+import { TEXT_MIME_TYPE, WAV_MIME_TYPE } from '@/lib/audio';
+import {
+  REC_EXTENSION,
+  REC_PREFIX,
+  SupportedLanguage,
+  TRANSCRIPT_EXTENSION,
+  TRANSCRIPT_PREFIX,
+} from '@/lib/constant';
+import { supabase } from '@/lib/supabase';
+import { useSpeechToText } from '@/hooks/useSpeechToText';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ToastAction } from '@/components/ui/toast';
 import { useToast } from '@/components/ui/use-toast';
 
-import { useDeviceState } from '@/context/device-provider';
-import { useAuth } from '@/context/auth-provider';
-import { useSpeechToText } from '@/hooks/useSpeechToText';
-
-import { supabase } from '@/lib/supabase';
-import { TEXT_MIME_TYPE, WAV_MIME_TYPE } from '@/lib/audio';
-
-import { recorderMachine, type RecorderEventType } from './recorder-machine';
 import { DeviceSelect } from './components/device-select';
 import { LanguageSelect } from './components/language-select';
 import LiveBadge from './components/live-badge';
-
-import {
-  TRANSCRIPT_EXTENSION,
-  TRANSCRIPT_PREFIX,
-  REC_EXTENSION,
-  REC_PREFIX,
-  SupportedLanguage,
-} from '@/lib/constant';
+import { recorderMachine, type RecorderEventType } from './recorder-machine';
 
 const CACHE_CONTROL = '86400'; // 1 day
 
@@ -187,8 +183,8 @@ function RecorderView() {
   };
 
   return (
-    <div className="w-full h-[550px] flex justify-center">
-      <div className="w-full mt-5 rounded-md border p-2">
+    <div className="flex h-[550px] w-full justify-center">
+      <div className="mt-5 w-full rounded-md border p-2">
         <div className="flex items-start justify-between">
           <div className="w-4/12">
             <DeviceSelect disabled={isTranscribing} />
@@ -206,7 +202,7 @@ function RecorderView() {
 
         {selectedDevice ? (
           <>
-            <div className="flex w-full justify-center items-center h-[200px]">
+            <div className="flex h-[200px] w-full items-center justify-center">
               {speechToText.playBackURL ? (
                 <audio
                   ref={audioElRef}
@@ -222,7 +218,7 @@ function RecorderView() {
                 />
               )}
             </div>
-            <div className="flex justify-center items-center">
+            <div className="flex items-center justify-center">
               {recordingState === 'idle' && (
                 <Button onClick={() => handleRecorderAction('RECORD')}>
                   <MicIcon className="mr-2 h-4 w-4" />
@@ -268,17 +264,17 @@ function RecorderView() {
         <div className="mt-5 flex justify-center">
           {isTranscribing && !speechToText.transcript && (
             <div className="w-1/2">
-              <Skeleton className="h-4 mt-2 w-full" />
-              <Skeleton className="h-4 mt-2 w-full" />
-              <Skeleton className="h-4 mt-2 w-full" />
-              <Skeleton className="h-4 mt-2 w-full" />
-              <Skeleton className="h-4 mt-2 w-full" />
-              <Skeleton className="h-4 mt-2 w-full" />
-              <Skeleton className="h-4 mt-2 w-full" />
+              <Skeleton className="mt-2 h-4 w-full" />
+              <Skeleton className="mt-2 h-4 w-full" />
+              <Skeleton className="mt-2 h-4 w-full" />
+              <Skeleton className="mt-2 h-4 w-full" />
+              <Skeleton className="mt-2 h-4 w-full" />
+              <Skeleton className="mt-2 h-4 w-full" />
+              <Skeleton className="mt-2 h-4 w-full" />
             </div>
           )}
           {speechToText.transcript && (
-            <p className="w-1/2 text-sm text-left line-clamp-8 bg-muted">
+            <p className="line-clamp-8 w-1/2 bg-muted text-left text-sm">
               {speechToText.transcript}
             </p>
           )}

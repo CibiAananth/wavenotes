@@ -1,5 +1,6 @@
-import { type ReactNode, memo } from 'react';
+import { memo, type ReactNode } from 'react';
 
+import { SupportedLanguage, supportedLanguages } from '@/lib/constant';
 import {
   Select,
   SelectContent,
@@ -8,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { SupportedLanguage, supportedLanguages } from '@/lib/constant';
 
 type LanguageSelectProps = {
   language: SupportedLanguage;

@@ -1,5 +1,6 @@
-import { useMemo, type ReactNode, memo } from 'react';
+import { memo, useMemo, type ReactNode } from 'react';
 
+import { useDeviceState } from '@/context/device-provider';
 import {
   Select,
   SelectContent,
@@ -8,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useDeviceState } from '@/context/device-provider';
 
 export const DeviceSelect = memo(
   ({ disabled = false }: { disabled: boolean }): ReactNode => {

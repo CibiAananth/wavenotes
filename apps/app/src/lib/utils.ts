@@ -1,10 +1,11 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+
 import {
-  REC_PREFIX,
   REC_EXTENSION,
-  TRANSCRIPT_PREFIX,
+  REC_PREFIX,
   TRANSCRIPT_EXTENSION,
+  TRANSCRIPT_PREFIX,
 } from './constant';
 
 export function cn(...inputs: ClassValue[]) {

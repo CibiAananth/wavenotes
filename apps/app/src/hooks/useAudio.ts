@@ -1,5 +1,6 @@
-import { DEFAULT_MIME_TYPE } from '@/lib/audio';
 import { useRef, useState } from 'react';
+
+import { DEFAULT_MIME_TYPE } from '@/lib/audio';
 
 type UseAudioOptions = {
   deviceId: string | null;

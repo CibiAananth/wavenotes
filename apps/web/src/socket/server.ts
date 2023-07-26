@@ -1,11 +1,11 @@
 import winston from 'winston';
 
-import socketAuthMiddleware from '../middleware/socket-auth';
 import {
   SOCKET_CORS_CONFIG,
   SOCKET_ENDPOINT,
   SPEECH_CLIENT_OPTIONS,
 } from '../config';
+import socketAuthMiddleware from '../middleware/socket-auth';
 
 function init(httpServer) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires

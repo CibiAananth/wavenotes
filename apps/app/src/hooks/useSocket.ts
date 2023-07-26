@@ -1,9 +1,9 @@
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   io,
+  type ManagerOptions,
   type Socket,
   type SocketOptions,
-  type ManagerOptions,
 } from 'socket.io-client';
 
 export function useSocket(

@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import { cva } from 'class-variance-authority';
 
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 const liveBadgeVariants = cva('bg-primary', {
   variants: {

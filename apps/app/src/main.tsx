@@ -1,13 +1,11 @@
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
-
 import { RouterProvider } from 'react-router-dom';
 import { router } from '@/router';
 
+import { UserProvider } from '@/context/auth-provider';
 import { DeviceProvider } from '@/context/device-provider';
 import { ThemeProvider } from '@/context/theme-provider';
-import { UserProvider } from '@/context/auth-provider';
-
 import AppShell from '@/components/layout/app-shell';
 
 const root = ReactDOM.createRoot(

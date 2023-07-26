@@ -2,16 +2,15 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus as PlusIcon } from '@phosphor-icons/react';
 
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/auth-provider';
-
-import emptySVG from '@/assets/empty.svg';
+import { REC_PREFIX } from '@/lib/constant';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import emptySVG from '@/assets/empty.svg';
 
 import { RecordingTable } from './components/recording-table';
 import { TableSkeleton } from './components/table-skeleton';
-import { REC_PREFIX } from '@/lib/constant';
 
 const PAGE_LIMIT = 20;
 
@@ -89,12 +88,12 @@ export default function Home(): ReactNode {
   }, [user]);
 
   return (
-    <div className="border min-h-[550px] h-full p-6 mt-4 rounded-md">
+    <div className="mt-4 h-full min-h-[550px] rounded-md border p-6">
       {requestState.isFetching && (
-        <div className="h-[200] w-full flex flex-col gap-3">
-          <div className="flex justify-between items-center">
+        <div className="flex h-[200] w-full flex-col gap-3">
+          <div className="flex items-center justify-between">
             <Skeleton className="h-[20px] w-[210px]" />
-            <Skeleton className="h-[36px] w-[210px] ml-auto" />
+            <Skeleton className="ml-auto h-[36px] w-[210px]" />
           </div>
           <div className="rounded-md border">
             <TableSkeleton />
@@ -103,8 +102,8 @@ export default function Home(): ReactNode {
       )}
 
       {!requestState.isFetching && !recordings?.length && (
-        <div className="flex flex-col gap-5 justify-center items-center h-full">
-          <img className="w-60 h-auto" src={emptySVG} alt="hero" />
+        <div className="flex h-full flex-col items-center justify-center gap-5">
+          <img className="h-auto w-60" src={emptySVG} alt="hero" />
           <h3 className="text-md">Shucks! It is empty</h3>
           <Link to="/recording/new">
             <Button className="ml-auto">
@@ -119,7 +118,7 @@ export default function Home(): ReactNode {
         !requestState.hasError &&
         recordings?.length && (
           <>
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <h3>Your recordings ({recordings?.length})</h3>
               <Link to="/recording/new">
                 <Button className="ml-auto">
@@ -130,7 +129,7 @@ export default function Home(): ReactNode {
             </div>
             <div className="mt-3">
               <RecordingTable data={recordings} />
-              <p className="text-muted-foreground text-xs mt-5 font-light">
+              <p className="mt-5 text-xs font-light text-muted-foreground">
                 {`Showing only the latest ${PAGE_LIMIT} available recordings .`}
               </p>
             </div>

@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import {
   ColumnDef,
-  TableOptions,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  TableOptions,
   useReactTable,
 } from '@tanstack/react-table';
 
+import { bytesToReadableString } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -16,9 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { AudioControlCell } from './audio-control-cell';
 
-import { bytesToReadableString } from '@/lib/utils';
+import { AudioControlCell } from './audio-control-cell';
 
 export type MetadataType = {
   eTag: string;

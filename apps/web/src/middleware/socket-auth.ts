@@ -1,5 +1,7 @@
-import { SOCKET_SECRET } from '../config';
 import winston from 'winston';
+
+import { SOCKET_SECRET } from '../config';
+
 const socketAuthMiddleware = (socket, next) => {
   /**
    * @todo

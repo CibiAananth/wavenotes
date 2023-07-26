@@ -1,22 +1,17 @@
 import {
+  useCallback,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
-  useRef,
-  useCallback,
 } from 'react';
 import { FileArrowDown, Pause, Play } from '@phosphor-icons/react';
+import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 
-import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/auth-provider';
-import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabase';
+import { transcriptNameFromWav } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,8 +20,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { DotsHorizontalIcon } from '@radix-ui/react-icons';
-import { transcriptNameFromWav } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useToast } from '@/components/ui/use-toast';
 
 export const AudioControlCell = ({
   row,

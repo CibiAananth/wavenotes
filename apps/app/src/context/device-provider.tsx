@@ -1,5 +1,4 @@
-import { createContext, useContext } from 'react';
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 export type DeviceContextType = {
   devices: MediaDeviceInfo[];

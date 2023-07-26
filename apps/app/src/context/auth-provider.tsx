@@ -1,13 +1,15 @@
 import React, {
-  ReactNode,
   createContext,
+  ReactNode,
   useCallback,
   useContext,
   useLayoutEffect,
   useState,
 } from 'react';
-import type { User, Session } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
+
 import { supabase } from '@/lib/supabase';
+
 import { randomPassword, randomUsername } from './util';
 
 type SessionType = Partial<Session>;
