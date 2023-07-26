@@ -1,7 +1,8 @@
 'use strict';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-require('dotenv').config({ debug: true });
+// require('dotenv').config({ debug: true });
+// console.log(__dirname);
 
 import express from 'express';
 import http from 'http';

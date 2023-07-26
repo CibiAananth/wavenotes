@@ -56,9 +56,9 @@
 }
 
 @layer utilities {
-  .line-clamp-3 {
+  .line-clamp-8 {
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 8;
     -webkit-box-orient: vertical;
     text-overflow: ellipsis;
     overflow: hidden;

@@ -1,9 +1,13 @@
-import { SAMPLE_RATE, SAMPLE_SIZE } from './config';
+import {
+  DEFAULT_CHANNEL_COUNT,
+  DEFAULT_SAMPLE_RATE,
+  DEFAULT_SAMPLE_SIZE,
+} from './config';
 
 export function writeWavHeader(
-  sampleRate = SAMPLE_RATE,
-  numChannels = 1,
-  bitsPerSample = SAMPLE_SIZE,
+  sampleRate = DEFAULT_SAMPLE_RATE,
+  numChannels = DEFAULT_CHANNEL_COUNT,
+  bitsPerSample = DEFAULT_SAMPLE_SIZE,
   numSamples,
 ) {
   const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;

@@ -263,7 +263,7 @@ function RecorderView() {
             </div>
           )}
           {speechToText.transcript && (
-            <p className="w-1/2 text-sm text-left line-clamp-3 bg-muted">
+            <p className="w-1/2 text-sm text-left line-clamp-8 bg-muted">
               {speechToText.transcript}
             </p>
           )}

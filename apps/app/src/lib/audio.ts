@@ -1,5 +1,6 @@
 export const DEFAULT_SAMPLE_RATE = 16000; // in hertz
-export const DEFAULT_SAMPLE_SIZE = 16; // in bits per linear sample
+export const DEFAULT_SAMPLE_SIZE = 16;
+export const DEFAULT_CHANNEL_COUNT = 16;
 export const DEFAULT_MIME_TYPE = 'audio/webm;codecs=opus';
 export const WAV_MIME_TYPE = 'audio/wav';
 export const TEXT_MIME_TYPE = 'text/plain';
@@ -60,7 +61,7 @@ export function combinePCMChunks(pcmChunks: Float32Array[]): Int16Array {
 
 export function writeWavHeaders(
   pcmData: Int16Array,
-  numChannels = 2,
+  numChannels = DEFAULT_CHANNEL_COUNT,
   sampleRate = DEFAULT_SAMPLE_RATE,
   bitDepth = DEFAULT_SAMPLE_SIZE,
 ): ArrayBuffer {

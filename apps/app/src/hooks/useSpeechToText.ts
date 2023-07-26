@@ -3,21 +3,20 @@ import { Buffer } from 'buffer';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
-  combinePCMChunks,
+  DEFAULT_CHANNEL_COUNT,
   DEFAULT_SAMPLE_RATE,
   DEFAULT_SAMPLE_SIZE,
-  WAV_MIME_TYPE,
-  workletScriptURL,
-  WORKLET_NAME,
-  writeWavHeaders,
   TEXT_MIME_TYPE,
+  WAV_MIME_TYPE,
+  WORKLET_NAME,
+  combinePCMChunks,
+  workletScriptURL,
+  writeWavHeaders,
 } from '@/lib/audio';
 import { useAudio } from './useAudio';
 import { useSocket } from './useSocket';
 import { useVisualizer } from './useVisualizer';
 
-const SAMPLE_RATE = DEFAULT_SAMPLE_RATE; // in hertz
-const SAMPLE_SIZE = DEFAULT_SAMPLE_SIZE; // in bits per linear sample
 const chunkInterval = 100;
 
 const OPTIONS_ANALYSER = {
@@ -33,8 +32,8 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
   const audio = useAudio({
     deviceId,
     constraints: {
-      sampleRate: SAMPLE_RATE,
-      sampleSize: SAMPLE_SIZE,
+      sampleRate: DEFAULT_SAMPLE_RATE,
+      sampleSize: DEFAULT_SAMPLE_SIZE,
     },
   });
   const socket = useSocket(import.meta.env.VITE_NODE_SERVER_URL, {
@@ -47,7 +46,9 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
   const payloadUUID = useRef<string | null>(null);
   const finalTranscript = useRef<Transcript[]>([]);
 
-  const [channelCount, setChannelCount] = useState<number>(1);
+  const [channelCount, setChannelCount] = useState<number>(
+    DEFAULT_CHANNEL_COUNT,
+  );
   const [liveStatus, setLiveStatus] = useState<boolean>(false);
   const [recordingInPCM, setRecordingInPCM] = useState<Int16Array | null>(null);
   const [chunksInPCM, setChunksInPCM] = useState<Int16Array | null>(null);
@@ -148,11 +149,6 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       let socketInstance = socket.instance;
       if (!socketInstance?.active) socketInstance = socket.init();
 
-      payloadUUID.current = uuidv4();
-      socketInstance?.emit('speech.chunks.pcm.session.start', {
-        id: payloadUUID.current,
-      });
-
       const stream = await audio.startStream();
       const { ctx, source } = await audio.createAudioContext(stream);
 
@@ -174,6 +170,12 @@ export function useSpeechToText({ deviceId }: { deviceId: string | null }) {
       worklet.connect(ctx.destination);
 
       setChannelCount(worklet.channelCount);
+      payloadUUID.current = uuidv4();
+      socketInstance?.emit('speech.chunks.pcm.session.start', {
+        id: payloadUUID.current,
+        channelCount: worklet.channelCount,
+        sampleRate: DEFAULT_SAMPLE_RATE,
+      });
     } catch (error) {
       console.log(error);
       throw error;

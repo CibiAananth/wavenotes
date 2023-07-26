@@ -47,6 +47,10 @@ function init(httpServer) {
         .streamingRecognize({
           config: {
             ...SPEECH_CLIENT_OPTIONS,
+            sampleRateHertz:
+              data.sampleRate || SPEECH_CLIENT_OPTIONS.sampleRateHertz,
+            audioChannelCount:
+              data.channelCount || SPEECH_CLIENT_OPTIONS.audioChannelCount,
           },
           interimResults: true,
         })
