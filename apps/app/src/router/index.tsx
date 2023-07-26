@@ -1,26 +1,16 @@
-import { Suspense, lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
-
-const Home = lazy(() => import('@/pages/home'));
-const RecordingPage = lazy(() => import('@/pages/recorder'));
+import Home from '@/pages/home';
+import RecordingPage from '@/pages/recorder';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     index: true,
-    element: (
-      <Suspense>
-        <Home />
-      </Suspense>
-    ),
+    Component: Home,
   },
   {
     path: '/recording/new',
     index: true,
-    element: (
-      <Suspense>
-        <RecordingPage />
-      </Suspense>
-    ),
+    Component: RecordingPage,
   },
 ]);
