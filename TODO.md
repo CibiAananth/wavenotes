@@ -19,4 +19,4 @@
 [x] Test deployment
 [] Move audio lib to shared libs
 [x] Change hardcoding in server side to pick channels from frontend
-[] Language dropdown to pick transcription language and pass to backend
+[x] Language dropdown to pick transcription language and pass to backend
