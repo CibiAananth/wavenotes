@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, type ReactNode, memo } from 'react';
 
 import {
   Select,
@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/select';
 import { useDeviceState } from '@/context/device-provider';
 
-export function DeviceSelect(): ReactNode {
+export const DeviceSelect = memo((): ReactNode => {
   const { devices, changeDevice, activeDevice, hasActiveDevice } =
     useDeviceState();
 
@@ -35,4 +35,4 @@ export function DeviceSelect(): ReactNode {
       </SelectContent>
     </Select>
   );
-}
+});

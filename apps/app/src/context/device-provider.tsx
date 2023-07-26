@@ -31,8 +31,15 @@ export function DeviceProvider({
 
   useEffect(() => {
     const persistedDeviceId = window.localStorage.getItem('deviceId');
-    setActiveDevice(persistedDeviceId);
-  }, []);
+    let deviceId = persistedDeviceId;
+    if (!persistedDeviceId && devices.length > 0) {
+      ({ deviceId } =
+        devices.find(device =>
+          device.deviceId.toLowerCase().includes('default'),
+        ) || devices[0]);
+    }
+    setActiveDevice(deviceId ?? null);
+  }, [devices]);
 
   function changeDevice(deviceId: string | null) {
     window.localStorage.setItem('deviceId', deviceId || '');
